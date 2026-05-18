@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0a0e1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>IDLE RPG · 1000F</title>
+<title>IDLE RPG · v0.3</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:#0a0e1a}
@@ -43,8 +43,8 @@ button{font-family:inherit;color:inherit}
 @keyframes propFly{from{transform:translateX(0)}to{transform:translateX(calc(-100vw - 60px))}}
 
 /* 캐릭터/몬스터 */
-.hero{position:absolute;left:18%;bottom:9%;width:90px;height:110px;z-index:3;transform-origin:bottom center}
-.enemy{position:absolute;right:14%;bottom:9%;width:90px;height:110px;z-index:3;transform-origin:bottom center;transition:right 0.55s cubic-bezier(0.25,1.2,0.45,1);--enemyScale:1}
+.hero{position:absolute;left:24%;bottom:9%;width:90px;height:110px;z-index:3;transform-origin:bottom center}
+.enemy{position:absolute;right:20%;bottom:9%;width:90px;height:110px;z-index:3;transform-origin:bottom center;transition:right 0.55s cubic-bezier(0.25,1.2,0.45,1);--enemyScale:1}
 .enemy.entering{right:-140px;transition:none}
 .enemy.big{--enemyScale:1.25;transform:scale(var(--enemyScale))}
 .enemy.boss{--enemyScale:1.55;transform:scale(var(--enemyScale));filter:drop-shadow(0 0 8px #ff4040)}
@@ -137,6 +137,21 @@ button{font-family:inherit;color:inherit}
 .action-btn:active{transform:translateY(2px);box-shadow:none}
 .action-btn.danger{border-color:#8a3840;background:linear-gradient(180deg,#6a2830,#3a1418)}
 
+
+.quest-card{background:linear-gradient(180deg,#252d42,#1a2034);border:1px solid #2e3856;border-radius:11px;padding:10px;margin-bottom:7px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.04)}
+.quest-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;font-weight:850;margin-bottom:5px}
+.quest-status{font-size:10px;color:#ffd84d;background:rgba(255,216,77,.12);border:1px solid rgba(255,216,77,.22);padding:2px 7px;border-radius:999px;white-space:nowrap}
+.quest-desc{font-size:10.5px;color:#aeb6cf;line-height:1.35;margin-bottom:7px}
+.quest-bar{height:8px;background:#0a0e1a;border:1px solid #2a3245;border-radius:999px;overflow:hidden;margin-bottom:7px}
+.quest-fill{height:100%;background:linear-gradient(180deg,#ffd84d,#c87a20);box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.quest-bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10.5px;color:#8a92aa}
+.quest-reward{color:#5fd070;font-weight:750;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quest-btn{border:1px solid #7ab84a;background:linear-gradient(180deg,#5a9a3a,#357019);border-radius:8px;padding:5px 9px;font-size:11px;font-weight:850;color:white;box-shadow:0 2px 0 #1f4a08;white-space:nowrap}
+.quest-btn:active{transform:translateY(2px);box-shadow:none}
+.quest-btn.disabled{border-color:#54586a;background:linear-gradient(180deg,#44485a,#2a2e3e);color:#777d91;box-shadow:none}
+.quest-btn.claimed{border-color:#4a5478;background:linear-gradient(180deg,#303a55,#202840);color:#8a92aa;box-shadow:none}
+.fx.skill{font-size:22px;color:#80d8ff;text-shadow:0 0 12px #2090ff,2px 2px 0 #000,-1px -1px 0 #000;animation:levelUpFx 1.05s forwards}
+
 .tabbar{display:flex;background:#181c2b;padding:5px;gap:3px;padding-bottom:max(5px,env(safe-area-inset-bottom));flex-shrink:0}
 .tab{flex:1;padding:7px 2px;text-align:center;background:#232b40;border:1px solid #2e3856;border-radius:9px;font-size:10px;font-weight:750;color:#8a92aa;cursor:pointer}
 .tab.active{background:linear-gradient(180deg,#3a82c4,#1a5a94);color:white;border-color:#7ac0f0;box-shadow:inset 0 1px 0 rgba(255,255,255,0.2)}
@@ -157,6 +172,40 @@ button{font-family:inherit;color:inherit}
   .upgrade{padding:7px 9px}
   .upgrade-icon{width:38px;height:38px;font-size:20px}
 }
+
+/* v0.3: 전투 이펙트/도감/유물 */
+.battle.shake{animation:battleShake .16s linear}
+@keyframes battleShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}50%{transform:translateX(3px)}75%{transform:translateX(-2px)}}
+.attack-fx{position:absolute;width:86px;height:86px;pointer-events:none;z-index:6;transform:translate(-50%,-50%);opacity:0}
+.attack-fx.normal{animation:normalSlashFx .32s ease-out forwards}
+.attack-fx.smash{width:124px;height:124px;animation:smashSlashFx .48s ease-out forwards}
+.attack-fx.skill{width:112px;height:112px;animation:skillAuraFx .55s ease-out forwards}
+@keyframes normalSlashFx{0%{opacity:0;transform:translate(-50%,-50%) rotate(-35deg) scale(.45)}22%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) rotate(28deg) scale(1.18)}}
+@keyframes smashSlashFx{0%{opacity:0;transform:translate(-50%,-50%) rotate(-55deg) scale(.35)}20%{opacity:1}55%{opacity:1;transform:translate(-50%,-50%) rotate(8deg) scale(1.18)}100%{opacity:0;transform:translate(-50%,-50%) rotate(45deg) scale(1.55)}}
+@keyframes skillAuraFx{0%{opacity:0;transform:translate(-50%,-50%) scale(.35)}35%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.45)}}
+.tab{font-size:9px;padding:6px 1px}
+.tab .ico{font-size:15px;margin-bottom:1px}
+.book-summary,.relic-summary{background:linear-gradient(180deg,#252d42,#1a2034);border:1px solid #2e3856;border-radius:11px;padding:10px;margin-bottom:8px;font-size:11px;color:#cfd5ee;line-height:1.45}
+.book-card,.relic-card{background:linear-gradient(180deg,#252d42,#1a2034);border:1px solid #2e3856;border-radius:12px;padding:9px;margin-bottom:8px;display:flex;gap:9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.book-card.locked{opacity:.78}
+.book-monster{width:58px;height:58px;flex-shrink:0;background:radial-gradient(circle at 50% 35%,#3a4360,#151a2b);border:1px solid #4a5478;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.book-monster svg{width:72px;height:72px}
+.book-monster.locked svg{filter:brightness(0) opacity(.45)}
+.book-info,.relic-info{flex:1;min-width:0}
+.book-title,.relic-title{display:flex;justify-content:space-between;gap:6px;font-size:13px;font-weight:850;margin-bottom:3px}
+.book-title .count,.relic-title .lvl{font-size:10px;color:#ffd84d;white-space:nowrap}
+.book-zone,.relic-desc{font-size:10px;color:#8a92aa;margin-bottom:4px}
+.book-desc{font-size:10.5px;color:#dce2f5;line-height:1.35;margin:4px 0}
+.book-progress{height:7px;background:#0a0e1a;border:1px solid #2a3245;border-radius:5px;overflow:hidden;margin:5px 0}
+.book-progress-fill{height:100%;background:linear-gradient(180deg,#c060ff,#6020a0)}
+.reward-list{font-size:10px;color:#aeb6d6;line-height:1.35;margin-top:4px}
+.reward-list .got{color:#5fd070;font-weight:750}
+.reward-list .next{color:#ffd84d;font-weight:750}
+.relic-icon{width:46px;height:46px;border-radius:12px;background:linear-gradient(180deg,#4a385a,#211a32);border:1px solid #7a5a98;display:flex;align-items:center;justify-content:center;font-size:25px;flex-shrink:0}
+.relic-card.locked{opacity:.72}
+.relic-card.locked .relic-icon{filter:grayscale(1) brightness(.65)}
+.small-note{font-size:10px;color:#8a92aa;line-height:1.35;margin-top:5px}
+
 </style>
 </head>
 <body>
@@ -231,6 +280,9 @@ button{font-family:inherit;color:inherit}
     <div class="tab active" data-tab="weapon"><div class="ico">⚔️</div>장비</div>
     <div class="tab" data-tab="atk"><div class="ico">💪</div>공격</div>
     <div class="tab" data-tab="def"><div class="ico">❤️</div>방어</div>
+    <div class="tab" data-tab="book"><div class="ico">📖</div>도감</div>
+    <div class="tab" data-tab="relic"><div class="ico">🏺</div>유물</div>
+    <div class="tab" data-tab="quest"><div class="ico">🎯</div>퀘스트</div>
     <div class="tab" data-tab="info"><div class="ico">📜</div>정보</div>
   </div>
 </div>
@@ -254,7 +306,9 @@ const FLOOR_RULE = Object.freeze({
 });
 
 const UNITS = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
-const SAVE_KEY = 'idleRpg1000SaveV1';
+const SAVE_KEY = 'idleRpg1000SaveV3';
+const OLD_SAVE_KEY = 'idleRpg1000SaveV2';
+const OLD_SAVE_KEY_V1 = 'idleRpg1000SaveV1';
 
 function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 function fmt(value) {
@@ -324,6 +378,33 @@ const MONSTERS_BY_ZONE = [
 const MONSTER_NAMES = {
   slime:'슬라임', leafbun:'잎 토끼', sheep:'몽글 양', boar:'버섯돼지', bat:'크리스탈 박쥐', stump:'나무 정령', jelly:'해파리', turtle:'돌 거북', lizard:'불 도마뱀'
 };
+
+const MONSTER_BOOK = {
+  slime:{ zone:0, short:'말랑한 마력 점액 몬스터입니다.', desc:'초원에서 가장 흔하게 발견됩니다. 몸은 약하지만 수가 많고, 빛나는 동전을 좋아합니다.', lore:'비 오는 날에는 몸집이 커지고, 작은 보석을 삼켜 반짝이는 개체도 발견됩니다.', unique:'전체 골드 +3%', bonus:{type:'gold',value:0.03} },
+  leafbun:{ zone:0, short:'풀잎 귀를 가진 작은 토끼형 몬스터입니다.', desc:'움직임이 빠르고 풀숲에 잘 숨습니다. 모험가들 사이에서는 행운의 몬스터로 불립니다.', lore:'놀라면 머리 위 잎을 접어 평범한 풀처럼 위장합니다.', unique:'회피율 +1%', bonus:{type:'dodge',value:0.01} },
+  sheep:{ zone:0, short:'구름처럼 둥글고 부드러운 양 몬스터입니다.', desc:'공격성은 낮지만 맷집이 좋습니다. 초보 모험가의 방어 훈련 상대로 자주 쓰입니다.', lore:'몽글 양의 털은 추운 지역에서 방한복 재료로 쓰입니다.', unique:'최대 체력 +3%', bonus:{type:'hp',value:0.03} },
+  boar:{ zone:1, short:'버섯을 등에 키우는 난폭한 멧돼지입니다.', desc:'숲속에서 돌진 공격을 합니다. 단단한 가죽 때문에 초반 방어력이 중요해집니다.', lore:'등의 버섯은 숲의 마력을 흡수해 자라며 밤에는 은은하게 빛납니다.', unique:'방어력 +3', bonus:{type:'def',value:3} },
+  bat:{ zone:1, short:'수정 조각을 품은 박쥐 몬스터입니다.', desc:'동굴과 숲의 어두운 곳에서 나타납니다. 빠른 움직임과 날카로운 일격이 특징입니다.', lore:'날개에 박힌 수정은 오래될수록 푸른 빛을 띱니다.', unique:'치명타 확률 +1%', bonus:{type:'crit',value:0.01} },
+  stump:{ zone:1, short:'오래된 그루터기에 깃든 나무 정령입니다.', desc:'움직임은 느리지만 생명력이 강합니다. 숲과 동굴에서 드물게 발견됩니다.', lore:'사람이 버린 도끼와 장작의 기억을 싫어합니다.', unique:'초당 회복 +1', bonus:{type:'regen',value:1} },
+  jelly:{ zone:2, short:'물가에서 떠다니는 투명한 해파리 몬스터입니다.', desc:'해변 지역에서 자주 발견됩니다. 몸이 투명해 첫 발견이 어렵습니다.', lore:'달빛 아래에서는 몸속 마력선이 별자리처럼 빛납니다.', unique:'스킬/강타 피해 +5%', bonus:{type:'skill',value:0.05} },
+  turtle:{ zone:2, short:'돌 껍질을 가진 느린 거북 몬스터입니다.', desc:'해변과 암석 지역에서 출몰합니다. 단단한 껍질 때문에 장기전이 되기 쉽습니다.', lore:'오래 산 개체는 등껍질에 작은 이끼 정원이 생깁니다.', unique:'피해 감소 +2', bonus:{type:'def',value:2} },
+  lizard:{ zone:3, short:'뜨거운 숨을 내뿜는 불 도마뱀입니다.', desc:'화산 지대와 마계에서 발견됩니다. 공격력이 강하고 보스 개체도 자주 등장합니다.', lore:'꼬리 끝 불꽃은 감정에 따라 색이 달라집니다.', unique:'전체 공격력 +3%', bonus:{type:'atk',value:0.03} },
+};
+const BOOK_STEPS = [1,5,10,30,50,100];
+const BOOK_REWARDS = [
+  {need:30, text:'해당 몬스터 피해 +10%'},
+  {need:50, text:'해당 몬스터 골드 +20%'},
+  {need:100, text:'고유 전체 보너스 해금'},
+];
+
+const RELICS = {
+  oldScabbard:{ name:'낡은 검집', icon:'🗡️', desc:'오래된 용사의 검집입니다. 검의 균형을 잡아 전체 공격력을 높입니다.', effect:l=>`공격력 +${l*5}%`, type:'atk', value:0.05 },
+  windFeather:{ name:'바람 깃털', icon:'🪶', desc:'바람의 정령이 남긴 깃털입니다. 움직임과 공격 간격을 가볍게 만듭니다.', effect:l=>`공격속도 +${l*3}%`, type:'speed', value:0.03 },
+  goldPouch:{ name:'황금 주머니', icon:'👝', desc:'동전을 끌어당기는 작은 주머니입니다. 전투 보상을 늘립니다.', effect:l=>`골드 획득 +${l*7}%`, type:'gold', value:0.07 },
+  lifeLeaf:{ name:'생명의 잎', icon:'🍃', desc:'시들지 않는 신비한 잎입니다. 최대 체력을 높여줍니다.', effect:l=>`최대 HP +${l*8}%`, type:'hp', value:0.08 },
+};
+function relicKeys(){ return Object.keys(RELICS); }
+
 const ZONE_TINTS = [null,{darken:0.7},{hueShift:200},{hueShift:20,sat:1.4},{darken:0.5,hueShift:280},{lighten:1.3,hueShift:200},{gold:true},{hueShift:280,darken:0.7}];
 const ZONE_BOSSES = [
   { type:'slime',  name:'초원 군주', color:'#7dd13f' },
@@ -350,6 +431,16 @@ function getBossData(floor) {
   return { type:base.type, name:`${base.name} ${title}`, color:base.color, final:false };
 }
 
+
+function getIntervalForBoots(lvl) {
+  return Math.max(160, 800 / (1 + Math.max(0, lvl) * 0.08));
+}
+function attackSpeedDesc(lvl) {
+  const sec = (getIntervalForBoots(lvl) / 1000).toFixed(2);
+  const speed = Math.round((800 / getIntervalForBoots(lvl) - 1) * 100);
+  return `공격간격 ${sec}초 · 공속 +${speed}%`;
+}
+
 const G = {
   floor:1, gold:0, highestFloor:1, checkpoint:1,
   level:1, xp:0, hp:100, baseDPS:5, baseMaxHP:100,
@@ -357,7 +448,7 @@ const G = {
   upgrades:{
     sword:{ name:'검', icon:'⚔️', cat:'weapon', lvl:1, base:10, growth:1.15, desc:l=>`공격 배율 ${mulText(Math.pow(1.08,l))}`, get:l=>Math.pow(1.08,l) },
     armor:{ name:'갑옷', icon:'🛡️', cat:'weapon', lvl:0, base:35, growth:1.17, desc:l=>`기본 피해 +${fmt(l*5)}`, get:l=>l*5 },
-    boots:{ name:'부츠', icon:'🥾', cat:'weapon', lvl:0, base:90, growth:1.18, desc:l=>`공속 +${Math.round(clamp(l*0.05,0,0.725)*100)}%`, get:l=>clamp(l*0.05,0,0.725) },
+    boots:{ name:'부츠', icon:'🥾', cat:'weapon', lvl:0, base:90, growth:1.18, desc:l=>attackSpeedDesc(l), get:l=>Math.max(0,l) },
     atk:{ name:'공격력', icon:'💪', cat:'atk', lvl:0, base:60, growth:1.22, desc:l=>`공격 배율 ${mulText(Math.pow(1.10,l))}`, get:l=>Math.pow(1.10,l) },
     crit:{ name:'치명타', icon:'⚡', cat:'atk', lvl:0, base:130, growth:1.28, desc:l=>`치명률 +${Math.round(clamp(l*0.02,0,0.75)*100)}%`, get:l=>clamp(l*0.02,0,0.75) },
     goldUp:{ name:'골드 마법', icon:'💰', cat:'atk', lvl:0, base:220, growth:1.32, desc:l=>`골드 +${Math.round(l*0.15*100)}%`, get:l=>l*0.15 },
@@ -370,7 +461,51 @@ const G = {
   bossTimer:0, bossActive:false, isBoss:false, isMini:false,
   tab:'weapon',
   offlineReward:0,
+  attackCount:0,
+  lastChestFloor:1,
+  questsClaimed:{},
+  monsterCounts:{},
+  relics:{ oldScabbard:0, windFeather:0, goldPouch:0, lifeLeaf:0 },
+  stats:{ totalKills:0, bossKills:0, miniKills:0, crits:0, strongHits:0, checkpoints:0, chests:0, upgrades:0, maxHit:0, goldEarned:0 },
 };
+
+
+const QUESTS = [
+  { id:'q_floor_5', title:'첫 체크포인트', desc:'5층을 넘어 6층 체크포인트에 도달하기', goal:1, progress:()=>G.highestFloor>=6?1:0, reward:{gold:150,xp:20} },
+  { id:'q_kill_10', title:'초보 사냥꾼', desc:'몬스터 10마리 처치하기', goal:10, progress:()=>G.stats.totalKills, reward:{gold:300,xp:35} },
+  { id:'q_sword_5', title:'검 손질', desc:'검을 Lv.5까지 강화하기', goal:5, progress:()=>G.upgrades.sword.lvl, reward:{gold:500,baseDPS:3} },
+  { id:'q_floor_10', title:'10층 돌파', desc:'10층 이상 도달하기', goal:10, progress:()=>G.highestFloor, reward:{gold:800,xp:80} },
+  { id:'q_strong_5', title:'강타 감각', desc:'강타를 5회 발동하기', goal:5, progress:()=>G.stats.strongHits, reward:{gold:1200,baseDPS:5} },
+  { id:'q_boss_1', title:'첫 보스 토벌', desc:'50층 보스를 1회 처치하기', goal:1, progress:()=>G.stats.bossKills, reward:{gold:2500,baseDPS:10} },
+  { id:'q_level_10', title:'성장하는 용사', desc:'용사 레벨 10 달성하기', goal:10, progress:()=>G.level, reward:{gold:3000,baseMaxHP:100} },
+  { id:'q_upgrade_20', title:'꾸준한 강화', desc:'강화를 총 20회 진행하기', goal:20, progress:()=>G.stats.upgrades, reward:{gold:5000,xp:250} },
+  { id:'q_floor_25', title:'초원 정복자', desc:'25층 이상 도달하기', goal:25, progress:()=>G.highestFloor, reward:{gold:8000,baseDPS:15} },
+  { id:'q_chest_5', title:'상자 수집가', desc:'체크포인트 상자 5개 획득하기', goal:5, progress:()=>G.stats.chests, reward:{gold:12000,baseDPS:20,baseMaxHP:150} },
+];
+function rewardText(reward) {
+  const parts = [];
+  if (reward.gold) parts.push('💰'+fmt(reward.gold));
+  if (reward.xp) parts.push('XP '+fmt(reward.xp));
+  if (reward.baseDPS) parts.push('공격+'+fmt(reward.baseDPS));
+  if (reward.baseMaxHP) parts.push('HP+'+fmt(reward.baseMaxHP));
+  return parts.join(' · ');
+}
+function applyReward(reward) {
+  if (reward.gold) { G.gold += reward.gold; G.stats.goldEarned += reward.gold; }
+  if (reward.xp) gainXP(reward.xp);
+  if (reward.baseDPS) G.baseDPS += reward.baseDPS;
+  if (reward.baseMaxHP) { G.baseMaxHP += reward.baseMaxHP; G.hp = Math.min(getMaxHP(), G.hp + reward.baseMaxHP); }
+}
+function claimQuest(id) {
+  const q = QUESTS.find(x => x.id === id);
+  if (!q || G.questsClaimed[id]) return;
+  if (q.progress() < q.goal) return;
+  G.questsClaimed[id] = true;
+  applyReward(q.reward);
+  spawnFX('퀘스트 완료!', 'levelup', 'hero');
+  saveGame();
+  renderAll();
+}
 
 // ─── 캐릭터 SVG ───
 function heroSVG() {
@@ -427,25 +562,58 @@ function monsterSVG(type, isBoss, zoneIdx, customColor) {
   return `<svg viewBox="0 0 80 100" width="100%" height="100%" ${fs}>${body}</svg>`;
 }
 
+
+function getMonsterCount(type){ return Math.max(0, Number(G.monsterCounts[type] || 0)); }
+function hasBookReward(type, need){ return getMonsterCount(type) >= need; }
+function getBookGlobalBonus(kind){
+  let total = 0;
+  Object.keys(MONSTER_BOOK).forEach(type => {
+    const data = MONSTER_BOOK[type];
+    if (getMonsterCount(type) >= 100 && data.bonus && data.bonus.type === kind) total += data.bonus.value;
+  });
+  return total;
+}
+function getMonsterBookDamageMult(type){ return hasBookReward(type,30) ? 1.10 : 1; }
+function getMonsterBookGoldMult(type){ return hasBookReward(type,50) ? 1.20 : 1; }
+function getRelicBonus(kind){
+  let total = 0;
+  Object.keys(RELICS).forEach(k => {
+    const r = RELICS[k];
+    const lvl = Math.max(0, Number(G.relics[k] || 0));
+    if (r.type === kind) total += lvl * r.value;
+  });
+  return total;
+}
+function getBookCompletion(){
+  const types = Object.keys(MONSTER_BOOK);
+  let points = 0;
+  types.forEach(type => BOOK_STEPS.forEach(step => { if (getMonsterCount(type) >= step) points++; }));
+  return { points, total: types.length * BOOK_STEPS.length, ratio: points / (types.length * BOOK_STEPS.length) };
+}
+function getSkillDamageMult(){ return 1 + getBookGlobalBonus('skill'); }
+
 // ─── 스탯/성장식 ───
 function getHitDamage() {
   const flat = G.baseDPS + (G.level - 1) * 2 + G.upgrades.armor.get(G.upgrades.armor.lvl);
-  const mult = G.upgrades.sword.get(G.upgrades.sword.lvl) * G.upgrades.atk.get(G.upgrades.atk.lvl);
-  return Math.max(1, Math.floor(flat * mult));
+  const mult = G.upgrades.sword.get(G.upgrades.sword.lvl) * G.upgrades.atk.get(G.upgrades.atk.lvl) * (1 + getRelicBonus('atk') + getBookGlobalBonus('atk'));
+  const targetType = G.monster && G.monster.type ? G.monster.type : null;
+  const bookMult = targetType ? getMonsterBookDamageMult(targetType) : 1;
+  return Math.max(1, Math.floor(flat * mult * bookMult));
 }
-function getInterval() { return Math.max(220, 800 * (1 - G.upgrades.boots.get(G.upgrades.boots.lvl))); }
+function getInterval() { return Math.max(140, getIntervalForBoots(G.upgrades.boots.lvl) / (1 + getRelicBonus('speed'))); }
 function getDPS() { return Math.max(1, Math.floor(getHitDamage() * (1000 / getInterval()))); }
-function getCrit() { return clamp(0.02 + G.upgrades.crit.get(G.upgrades.crit.lvl), 0, 0.85); }
-function getGoldMult() { return 1 + G.upgrades.goldUp.get(G.upgrades.goldUp.lvl); }
+function getCrit() { return clamp(0.02 + G.upgrades.crit.get(G.upgrades.crit.lvl) + getBookGlobalBonus('crit'), 0, 0.85); }
+function getGoldMult() { return 1 + G.upgrades.goldUp.get(G.upgrades.goldUp.lvl) + getRelicBonus('gold') + getBookGlobalBonus('gold'); }
 function getMaxHP() {
   let hp = G.baseMaxHP + (G.level - 1) * 18;
   hp += Math.floor((Math.max(1,G.floor) - 1) / 5) * 35;
   hp += G.upgrades.hp.get(G.upgrades.hp.lvl);
+  hp *= (1 + getRelicBonus('hp') + getBookGlobalBonus('hp'));
   return Math.floor(hp);
 }
-function getDef() { return G.upgrades.def.get(G.upgrades.def.lvl); }
-function getDodge() { return G.upgrades.dodge.get(G.upgrades.dodge.lvl); }
-function getRegen() { return G.upgrades.regen.get(G.upgrades.regen.lvl); }
+function getDef() { return G.upgrades.def.get(G.upgrades.def.lvl) + getBookGlobalBonus('def'); }
+function getDodge() { return clamp(G.upgrades.dodge.get(G.upgrades.dodge.lvl) + getBookGlobalBonus('dodge'), 0, 0.75); }
+function getRegen() { return G.upgrades.regen.get(G.upgrades.regen.lvl) + getBookGlobalBonus('regen'); }
 function getCost(key) { const u = G.upgrades[key]; return Math.floor(u.base * Math.pow(u.growth, u.lvl)); }
 function getMonsterHP(floor) {
   const local = getLocalFloor(floor);
@@ -497,6 +665,11 @@ function saveGame() {
       floor:G.floor, gold:G.gold, highestFloor:G.highestFloor, checkpoint:G.checkpoint,
       level:G.level, xp:G.xp, hp:G.hp, baseDPS:G.baseDPS, baseMaxHP:G.baseMaxHP,
       upgrades:upgradeLvls,
+      stats:G.stats,
+      questsClaimed:G.questsClaimed,
+      monsterCounts:G.monsterCounts,
+      relics:G.relics,
+      lastChestFloor:G.lastChestFloor,
       savedAt:Date.now(),
     }));
   } catch(e) { console.warn('save failed', e); }
@@ -506,7 +679,7 @@ function safeValue(value, fallback) {
 }
 function loadGame() {
   let raw = null;
-  try { raw = localStorage.getItem(SAVE_KEY); } catch(e) {}
+  try { raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem(OLD_SAVE_KEY) || localStorage.getItem(OLD_SAVE_KEY_V1); } catch(e) {}
   if (!raw) return;
   try {
     const s = JSON.parse(raw);
@@ -519,6 +692,11 @@ function loadGame() {
     G.baseDPS = Math.max(1, Number(safeValue(s.baseDPS, 5)));
     G.baseMaxHP = Math.max(100, Number(safeValue(s.baseMaxHP, 100)));
     if (s.upgrades) Object.keys(s.upgrades).forEach(k => { if (G.upgrades[k]) G.upgrades[k].lvl = Math.max(0, Math.floor(s.upgrades[k])); });
+    if (s.stats) Object.keys(G.stats).forEach(k => { G.stats[k] = Math.max(0, Number(safeValue(s.stats[k], G.stats[k]))); });
+    if (s.questsClaimed) G.questsClaimed = s.questsClaimed;
+    if (s.monsterCounts) G.monsterCounts = s.monsterCounts;
+    if (s.relics) Object.keys(G.relics).forEach(k => { G.relics[k] = Math.max(0, Math.floor(safeValue(s.relics[k], G.relics[k]))); });
+    G.lastChestFloor = Math.max(1, Math.floor(safeValue(s.lastChestFloor, G.lastChestFloor)));
     G.hp = clamp(Number(safeValue(s.hp, getMaxHP())), 1, getMaxHP());
     if (s.savedAt) applyOfflineReward(s.savedAt);
   } catch(e) { console.warn('load failed', e); }
@@ -534,7 +712,7 @@ function applyOfflineReward(savedAt) {
 }
 function hardReset() {
   if (!confirm('정말 저장 데이터를 초기화할까요?')) return;
-  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+  try { localStorage.removeItem(SAVE_KEY); localStorage.removeItem(OLD_SAVE_KEY); localStorage.removeItem(OLD_SAVE_KEY_V1); } catch(e) {}
   location.reload();
 }
 
@@ -624,10 +802,24 @@ function spawnMonster() {
 
 function heroAttack() {
   if (G.phase !== STATE.FIGHTING || !G.monster || G.monster.hp <= 0) return;
-  let dmg = getHitDamage();
-  const crit = Math.random() < getCrit();
-  if (crit) dmg = Math.floor(dmg * 2.5);
 
+  G.attackCount++;
+  let dmg = getHitDamage();
+  const strong = G.attackCount % 5 === 0;
+  const crit = Math.random() < getCrit();
+
+  if (strong) {
+    dmg = Math.floor(dmg * 2.5 * getSkillDamageMult());
+    G.stats.strongHits++;
+  }
+  if (crit) {
+    dmg = Math.floor(dmg * 2.5);
+    G.stats.crits++;
+  }
+  if (dmg > G.stats.maxHit) G.stats.maxHit = dmg;
+
+  spawnAttackEffect(strong ? 'smash' : 'normal');
+  if (strong) shakeBattle();
   const hero = document.getElementById('hero');
   hero.classList.add('attacking');
   setTimeout(() => hero.classList.remove('attacking'), 400);
@@ -635,6 +827,7 @@ function heroAttack() {
   setTimeout(() => {
     if (G.phase !== STATE.FIGHTING || !G.monster || G.monster.hp <= 0) return;
     G.monster.hp -= dmg;
+    if (strong) { spawnFX('강타!', 'skill', 'enemy'); spawnAttackEffect('skill'); }
     spawnFX(fmt(dmg), crit ? 'crit' : '', 'enemy');
     const ene = document.getElementById('enemy');
     ene.classList.add('hit');
@@ -691,14 +884,44 @@ function playerDeath() {
   failCurrentFloor('패배...');
 }
 
+
+function recordMonsterKill() {
+  if (!G.monster) return;
+  G.stats.totalKills++;
+  if (G.isBoss) G.stats.bossKills++;
+  if (G.isMini) G.stats.miniKills++;
+  const type = G.monster.type || 'unknown';
+  G.monsterCounts[type] = (G.monsterCounts[type] || 0) + 1;
+}
+function awardCheckpointChest(floor) {
+  if (floor <= 1 || floor !== getCheckpointFloor(floor) || G.lastChestFloor === floor) return;
+  const prevFloor = Math.max(1, floor - 1);
+  const chestGold = Math.floor(getMonsterGold(prevFloor) * getGoldMult() * (floor % 50 === 1 ? 8 : 3));
+  const chestXp = Math.max(1, Math.floor(getXPRequired(G.level) * 0.12));
+  G.gold += chestGold;
+  G.stats.goldEarned += chestGold;
+  G.stats.chests++;
+  G.stats.checkpoints++;
+  G.lastChestFloor = floor;
+  spawnFX('상자 +' + fmt(chestGold), 'gold', 'hero');
+  setTimeout(() => spawnFX('+' + fmt(chestXp) + ' XP', 'xp', 'hero'), 160);
+  gainXP(chestXp);
+}
+
 function killMonster() {
   G.phase = STATE.DEFEATED;
-  const reward = Math.floor(getMonsterGold(G.floor) * getGoldMult());
+  const killedType = G.monster && G.monster.type ? G.monster.type : 'unknown';
+  const killedFloor = G.floor;
+  const wasBoss = G.isBoss;
+  const reward = Math.floor(getMonsterGold(G.floor) * getGoldMult() * getMonsterBookGoldMult(killedType));
   const xpGain = getMonsterXP(G.floor);
   G.gold += reward;
+  G.stats.goldEarned += reward;
+  recordMonsterKill();
   spawnFX('+' + fmt(reward), 'gold', 'enemy');
   setTimeout(() => spawnFX('+' + fmt(xpGain) + ' XP', 'xp', 'enemy'), 150);
   gainXP(xpGain);
+  if (wasBoss) tryRelicDrop(killedFloor);
 
   const ene = document.getElementById('enemy');
   ene.classList.add('dying');
@@ -709,7 +932,8 @@ function killMonster() {
     G.checkpoint = getCheckpointFloor(G.floor);
     if (G.floor === G.checkpoint && G.floor > 1) {
       G.hp = getMaxHP();
-      setTimeout(() => spawnFX('💚 체크포인트!', 'levelup', 'hero'), 200);
+      awardCheckpointChest(G.floor);
+      setTimeout(() => spawnFX('💚 체크포인트!', 'levelup', 'hero'), 220);
     }
     saveGame();
     startRunning();
@@ -740,6 +964,7 @@ function buyUpgrade(key) {
   if (G.gold < cost) return;
   G.gold -= cost;
   u.lvl++;
+  G.stats.upgrades++;
   if (key === 'hp') G.hp += 30;
   saveGame();
   renderAll();
@@ -757,6 +982,51 @@ function spawnFX(text, cls, target) {
   div.style.top = (rect.top - pRect.top + 20) + 'px';
   battle.appendChild(div);
   setTimeout(() => div.remove(), 1200);
+}
+
+function attackEffectSVG(type){
+  if (type === 'smash') return `<svg viewBox="0 0 120 120" width="100%" height="100%"><defs><filter id="g"><feGaussianBlur stdDeviation="1.5"/></filter></defs><path d="M16 102 C44 30 74 17 106 12 C82 42 61 70 38 108" fill="rgba(255,80,40,.22)" filter="url(#g)"/><path d="M18 98 C45 44 70 24 102 16" stroke="#fff1a0" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M22 102 C48 52 72 33 104 21" stroke="#ff4040" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M34 89 C58 58 76 43 100 34" stroke="#ffd84d" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`;
+  if (type === 'skill') return `<svg viewBox="0 0 120 120" width="100%" height="100%"><circle cx="60" cy="60" r="36" fill="none" stroke="rgba(255,216,77,.85)" stroke-width="4"/><circle cx="60" cy="60" r="22" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="2"/><path d="M60 18 L68 52 L102 60 L68 68 L60 102 L52 68 L18 60 L52 52 Z" fill="rgba(255,216,77,.18)" stroke="rgba(255,216,77,.9)" stroke-width="2"/></svg>`;
+  return `<svg viewBox="0 0 90 90" width="100%" height="100%"><path d="M12 76 C34 32 55 18 80 11" stroke="#ffffff" stroke-width="7" stroke-linecap="round" fill="none"/><path d="M17 78 C39 42 57 28 78 17" stroke="#ffe080" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M25 72 C44 50 58 39 75 31" stroke="rgba(95,175,255,.8)" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`;
+}
+function spawnAttackEffect(type){
+  const battle = document.getElementById('battle');
+  const hero = document.getElementById('hero');
+  const enemy = document.getElementById('enemy');
+  if (!battle || !hero || !enemy) return;
+  const br = battle.getBoundingClientRect();
+  const hr = hero.getBoundingClientRect();
+  const er = enemy.getBoundingClientRect();
+  const div = document.createElement('div');
+  div.className = 'attack-fx ' + type;
+  div.innerHTML = attackEffectSVG(type);
+  const x = ((hr.left + hr.width*.78) + (er.left + er.width*.25)) / 2 - br.left;
+  const y = ((hr.top + hr.height*.45) + (er.top + er.height*.45)) / 2 - br.top;
+  div.style.left = x + 'px';
+  div.style.top = y + 'px';
+  battle.appendChild(div);
+  setTimeout(() => div.remove(), 700);
+}
+function shakeBattle(){
+  const battle = document.getElementById('battle');
+  battle.classList.remove('shake');
+  void battle.offsetWidth;
+  battle.classList.add('shake');
+  setTimeout(() => battle.classList.remove('shake'), 180);
+}
+function getRelicDropRate(floor){
+  const local = getLocalFloor(floor);
+  if (local === FLOOR_RULE.FINAL_BOSS_LOCAL_FLOOR) return 1;
+  return Math.min(0.75, 0.30 + Math.floor(local / 100) * 0.05);
+}
+function tryRelicDrop(floor){
+  const rate = getRelicDropRate(floor);
+  if (Math.random() > rate) return;
+  const keys = relicKeys();
+  const key = keys[Math.floor(Math.random() * keys.length)];
+  G.relics[key] = Math.max(0, Number(G.relics[key] || 0)) + 1;
+  const r = RELICS[key];
+  setTimeout(() => spawnFX(`${r.icon} ${r.name}!`, 'levelup', 'enemy'), 260);
 }
 
 // ─── 렌더링 ───
@@ -789,23 +1059,100 @@ function renderTop() {
 function renderMenu() {
   const menu = document.getElementById('menu');
   let html = '';
-  const titles = { weapon:'⚔️ 장비 강화', atk:'💪 공격 스탯', def:'❤️ 방어 스탯' };
+  const titles = { weapon:'⚔️ 장비 강화', atk:'💪 공격 스탯', def:'❤️ 방어 스탯', quest:'🎯 메인 퀘스트', book:'📖 몬스터 도감', relic:'🏺 유물' };
   if (G.tab === 'info') html += infoPanel();
+  else if (G.tab === 'quest') html += questPanel();
+  else if (G.tab === 'book') html += bookPanel();
+  else if (G.tab === 'relic') html += relicPanel();
   else {
     html += `<div class="section-title">${titles[G.tab]}</div>`;
     Object.keys(G.upgrades).forEach(k => { if (G.upgrades[k].cat === G.tab) html += upgradeCard(k); });
   }
   menu.innerHTML = html;
   menu.querySelectorAll('.buy-btn').forEach(btn => btn.addEventListener('click', () => buyUpgrade(btn.dataset.key)));
+  menu.querySelectorAll('.quest-btn').forEach(btn => btn.addEventListener('click', () => claimQuest(btn.dataset.quest))); 
   menu.querySelectorAll('.action-btn').forEach(btn => btn.addEventListener('click', () => {
     if (btn.dataset.action === 'save') { saveGame(); spawnFX('저장 완료', 'levelup', 'hero'); }
     if (btn.dataset.action === 'reset') hardReset();
   }));
 }
+
+function projectedValue(key, calc) {
+  const u = G.upgrades[key];
+  if (!u) return calc();
+  const old = u.lvl;
+  u.lvl = old + 1;
+  const v = calc();
+  u.lvl = old;
+  return v;
+}
+function upgradePreview(key) {
+  if (key === 'boots') return `공격속도 ${(getInterval()/1000).toFixed(2)}초 → ${(projectedValue(key, getInterval)/1000).toFixed(2)}초 / DPS ${fmt(getDPS())} → ${fmt(projectedValue(key, getDPS))}`;
+  if (key === 'hp') return `최대 HP ${fmt(getMaxHP())} → ${fmt(projectedValue(key, getMaxHP))}`;
+  if (key === 'def') return `방어 ${fmt(getDef())} → ${fmt(projectedValue(key, getDef))}`;
+  if (key === 'regen') return `재생 ${fmt(getRegen())} → ${fmt(projectedValue(key, getRegen))}`;
+  if (key === 'dodge') return `회피 ${pctText(getDodge())} → ${pctText(projectedValue(key, getDodge))}`;
+  if (key === 'crit') return `치명률 ${pctText(getCrit())} → ${pctText(projectedValue(key, getCrit))}`;
+  if (key === 'goldUp') return `골드 보너스 +${Math.round((getGoldMult()-1)*100)}% → +${Math.round((projectedValue(key, getGoldMult)-1)*100)}%`;
+  return `1타 ${fmt(getHitDamage())} → ${fmt(projectedValue(key, getHitDamage))} / DPS ${fmt(getDPS())} → ${fmt(projectedValue(key, getDPS))}`;
+}
+
 function upgradeCard(key) {
   const u = G.upgrades[key]; const cost = getCost(key); const can = G.gold >= cost;
-  return `<div class="upgrade"><div class="upgrade-icon">${u.icon}</div><div class="upgrade-info"><div class="upgrade-name">${u.name} <span class="lvl">Lv.${fmt(u.lvl)}</span></div><div class="upgrade-effect">현재 <span class="up">${u.desc(u.lvl)}</span><br>다음 ${u.desc(u.lvl+1)}</div></div><div class="buy-btn ${can?'':'disabled'}" data-key="${key}">강화<span class="cost">💰${fmt(cost)}</span></div></div>`;
+  return `<div class="upgrade"><div class="upgrade-icon">${u.icon}</div><div class="upgrade-info"><div class="upgrade-name">${u.name} <span class="lvl">Lv.${fmt(u.lvl)}</span></div><div class="upgrade-effect">현재 <span class="up">${u.desc(u.lvl)}</span><br>다음 ${u.desc(u.lvl+1)}<br><span class="up">${upgradePreview(key)}</span></div></div><div class="buy-btn ${can?'':'disabled'}" data-key="${key}">강화<span class="cost">💰${fmt(cost)}</span></div></div>`;
 }
+
+function questPanel() {
+  let done = 0;
+  QUESTS.forEach(q => { if (G.questsClaimed[q.id]) done++; });
+  let html = `<div class="info-card"><div class="section-title" style="margin:0 0 6px">🎯 v0.3 메인 퀘스트</div><div class="info-row"><span class="l">완료</span><span class="r">${done} / ${QUESTS.length}</span></div><div class="info-row"><span class="l">신규 전투 스킬</span><span class="r">5번째 공격마다 강타</span></div></div>`;
+  QUESTS.forEach(q => {
+    const progress = Math.min(q.goal, Math.max(0, q.progress()));
+    const pct = Math.min(100, progress / q.goal * 100);
+    const claimed = !!G.questsClaimed[q.id];
+    const ready = progress >= q.goal && !claimed;
+    html += `<div class="quest-card"><div class="quest-head"><span>${q.title}</span><span class="quest-status">${fmt(progress)} / ${fmt(q.goal)}</span></div><div class="quest-desc">${q.desc}</div><div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div><div class="quest-bottom"><span class="quest-reward">보상: ${rewardText(q.reward)}</span><button class="quest-btn ${claimed?'claimed':(ready?'':'disabled')}" data-quest="${q.id}">${claimed?'완료':(ready?'받기':'진행중')}</button></div></div>`;
+  });
+  return html;
+}
+
+
+function monsterBookCard(type){
+  const data = MONSTER_BOOK[type];
+  const count = getMonsterCount(type);
+  const discovered = count >= 1;
+  const zoneIdx = data.zone;
+  const name = discovered ? MONSTER_NAMES[type] : '???';
+  const zoneText = count >= 5 ? ZONES[zoneIdx].name : '서식지: ???';
+  let desc = '아직 발견하지 못한 몬스터입니다.';
+  if (count >= 10) desc = data.desc;
+  else if (count >= 1) desc = data.short;
+  if (count >= 30) desc += '<br><span class="small-note">' + data.lore + '</span>';
+  const pct = Math.min(100, count / 100 * 100);
+  const rewards = BOOK_REWARDS.map(r => {
+    const got = count >= r.need;
+    const extra = r.need === 100 ? ` · ${data.unique}` : '';
+    return `<div class="${got?'got':'next'}">${got?'✓':'다음'} ${r.need}마리: ${r.text}${extra}</div>`;
+  }).join('');
+  return `<div class="book-card ${discovered?'':'locked'}"><div class="book-monster ${discovered?'':'locked'}">${monsterSVG(type,false,zoneIdx)}</div><div class="book-info"><div class="book-title"><span>${name}</span><span class="count">${fmt(count)} / 100</span></div><div class="book-zone">${zoneText}</div><div class="book-progress"><div class="book-progress-fill" style="width:${pct}%"></div></div><div class="book-desc">${desc}</div><div class="reward-list">${rewards}</div></div></div>`;
+}
+function bookPanel(){
+  const comp = getBookCompletion();
+  let html = `<div class="book-summary"><b>📖 몬스터 도감</b><br>몬스터를 처치하면 카드 정보가 열립니다. 30마리/50마리/100마리마다 실제 능력 보너스가 자동 적용됩니다.<br><span class="small-note">도감 진행도: ${comp.points} / ${comp.total} · ${Math.floor(comp.ratio*100)}%</span></div>`;
+  Object.keys(MONSTER_BOOK).forEach(type => { html += monsterBookCard(type); });
+  return html;
+}
+function relicPanel(){
+  const totalLv = relicKeys().reduce((a,k)=>a+Number(G.relics[k]||0),0);
+  let html = `<div class="relic-summary"><b>🏺 보스 유물</b><br>50층마다 등장하는 보스를 처치하면 확률적으로 유물을 얻습니다. 1000층 최종 보스는 유물을 확정으로 줍니다.<br><span class="small-note">보유 유물 레벨 합계: ${fmt(totalLv)}</span></div>`;
+  relicKeys().forEach(k => {
+    const r = RELICS[k];
+    const lvl = Math.max(0, Number(G.relics[k] || 0));
+    html += `<div class="relic-card ${lvl>0?'':'locked'}"><div class="relic-icon">${r.icon}</div><div class="relic-info"><div class="relic-title"><span>${r.name}</span><span class="lvl">Lv.${fmt(lvl)}</span></div><div class="relic-desc">${lvl>0?r.desc:'미획득 · 보스 처치 시 획득 가능'}</div><div class="reward-list"><span class="${lvl>0?'got':'next'}">${r.effect(lvl)}</span><br><span class="small-note">다음 레벨: ${r.effect(lvl+1)}</span></div></div></div>`;
+  });
+  return html;
+}
+
 function infoPanel() {
   const local = getLocalFloor(G.floor);
   const worldNo = getWorldNo(G.floor);
@@ -818,7 +1165,7 @@ function infoPanel() {
     cells += `<div class="zone-cell ${done?'cleared':''} ${cur?'current':''}" title="${range.start}-${range.end}층">${ZONES[i].name.split(' ')[0]}</div>`;
   }
   const offline = G.offlineReward > 0 ? `<div class="info-row"><span class="l">최근 오프라인 보상</span><span class="r gold">💰 ${fmt(G.offlineReward)}</span></div>` : '';
-  return `<div class="info-card"><div class="section-title" style="margin:0 0 6px">🧙 용사 정보</div><div class="info-row"><span class="l">레벨</span><span class="r">Lv. ${fmt(G.level)}</span></div><div class="info-row"><span class="l">경험치</span><span class="r">${fmt(G.xp)} / ${fmt(getXPRequired(G.level))}</span></div><div class="info-row"><span class="l">최대 체력</span><span class="r green">${fmt(getMaxHP())}</span></div><div class="info-row"><span class="l">1타 피해량</span><span class="r">${fmt(getHitDamage())}</span></div><div class="info-row"><span class="l">실제 DPS</span><span class="r">${fmt(getDPS())}</span></div><div class="info-row"><span class="l">공격 속도</span><span class="r">${(getInterval()/1000).toFixed(2)}초</span></div></div><div class="info-card"><div class="info-row"><span class="l">현재 세계</span><span class="r">${worldNo}세계</span></div><div class="info-row"><span class="l">세계 내 층</span><span class="r">${local} / ${FLOOR_RULE.FLOORS_PER_WORLD}</span></div><div class="info-row"><span class="l">전체 층</span><span class="r">${G.floor}층</span></div><div class="info-row"><span class="l">체크포인트</span><span class="r">${checkpoint}층</span></div><div class="info-row"><span class="l">최고 기록</span><span class="r">${G.highestFloor}층</span></div><div class="info-row"><span class="l">보유 골드</span><span class="r gold">💰 ${fmt(G.gold)}</span></div>${offline}</div><div class="info-card"><div class="section-title" style="margin-bottom:8px">🗺️ 현재 세계 진행도</div><div class="zone-progress">${cells}</div></div><div class="info-card"><div class="section-title" style="margin-bottom:6px">⚠️ 전투 규칙</div><div class="info-row"><span class="l">미니 보스</span><span class="r">5층마다</span></div><div class="info-row"><span class="l">보스</span><span class="r">50층마다</span></div><div class="info-row"><span class="l">최종 보스</span><span class="r" style="color:#ffd84d">1000층마다</span></div><div class="info-row"><span class="l">실패 복귀</span><span class="r">1, 6, 11, 16...</span></div><div class="action-row"><button class="action-btn" data-action="save">수동 저장</button><button class="action-btn danger" data-action="reset">초기화</button></div></div>`;
+  return `<div class="info-card"><div class="section-title" style="margin:0 0 6px">🧙 용사 정보</div><div class="info-row"><span class="l">레벨</span><span class="r">Lv. ${fmt(G.level)}</span></div><div class="info-row"><span class="l">경험치</span><span class="r">${fmt(G.xp)} / ${fmt(getXPRequired(G.level))}</span></div><div class="info-row"><span class="l">최대 체력</span><span class="r green">${fmt(getMaxHP())}</span></div><div class="info-row"><span class="l">1타 피해량</span><span class="r">${fmt(getHitDamage())}</span></div><div class="info-row"><span class="l">실제 DPS</span><span class="r">${fmt(getDPS())}</span></div><div class="info-row"><span class="l">공격 속도</span><span class="r">${(getInterval()/1000).toFixed(2)}초</span></div><div class="info-row"><span class="l">최대 피해</span><span class="r">${fmt(G.stats.maxHit)}</span></div></div><div class="info-card"><div class="info-row"><span class="l">현재 세계</span><span class="r">${worldNo}세계</span></div><div class="info-row"><span class="l">세계 내 층</span><span class="r">${local} / ${FLOOR_RULE.FLOORS_PER_WORLD}</span></div><div class="info-row"><span class="l">전체 층</span><span class="r">${G.floor}층</span></div><div class="info-row"><span class="l">체크포인트</span><span class="r">${checkpoint}층</span></div><div class="info-row"><span class="l">최고 기록</span><span class="r">${G.highestFloor}층</span></div><div class="info-row"><span class="l">보유 골드</span><span class="r gold">💰 ${fmt(G.gold)}</span></div>${offline}</div><div class="info-card"><div class="section-title" style="margin:0 0 6px">📊 전투 기록</div><div class="info-row"><span class="l">처치</span><span class="r">${fmt(G.stats.totalKills)}</span></div><div class="info-row"><span class="l">보스 처치</span><span class="r">${fmt(G.stats.bossKills)}</span></div><div class="info-row"><span class="l">강타 / 치명타</span><span class="r">${fmt(G.stats.strongHits)} / ${fmt(G.stats.crits)}</span></div><div class="info-row"><span class="l">상자</span><span class="r">${fmt(G.stats.chests)}</span></div><div class="info-row"><span class="l">도감 진행</span><span class="r">${getBookCompletion().points} / ${getBookCompletion().total}</span></div><div class="info-row"><span class="l">유물 레벨합</span><span class="r">${relicKeys().reduce((a,k)=>a+Number(G.relics[k]||0),0)}</span></div></div><div class="info-card"><div class="section-title" style="margin-bottom:8px">🗺️ 현재 세계 진행도</div><div class="zone-progress">${cells}</div></div><div class="info-card"><div class="section-title" style="margin-bottom:6px">⚠️ 전투 규칙</div><div class="info-row"><span class="l">미니 보스</span><span class="r">5층마다</span></div><div class="info-row"><span class="l">보스</span><span class="r">50층마다</span></div><div class="info-row"><span class="l">최종 보스</span><span class="r" style="color:#ffd84d">1000층마다</span></div><div class="info-row"><span class="l">실패 복귀</span><span class="r">1, 6, 11, 16...</span></div><div class="action-row"><button class="action-btn" data-action="save">수동 저장</button><button class="action-btn danger" data-action="reset">초기화</button></div></div>`;
 }
 function renderAll() { renderTop(); renderHP(); renderMenu(); }
 
