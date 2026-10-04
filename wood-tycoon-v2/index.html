@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Wood Yard V2</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#c7deb5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#173525;touch-action:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;background:#c7deb5}
+#hud{position:fixed;z-index:3;left:12px;right:12px;top:max(10px,env(safe-area-inset-top));display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.p{background:rgba(255,255,255,.93);border:2px solid rgba(47,82,55,.13);border-radius:17px;box-shadow:0 7px 20px rgba(43,72,45,.13);padding:9px 11px;font-weight:850}
+#stats{display:flex;gap:9px;font-size:12px;white-space:nowrap}#stats b{font-size:16px}
+#mission{max-width:48vw;font-size:11px;line-height:1.35}
+#tip{position:fixed;z-index:3;left:50%;bottom:85px;transform:translateX(-50%);padding:7px 11px;border-radius:13px;background:rgba(27,49,34,.84);color:#fff;font-size:10px;font-weight:850;white-space:nowrap;pointer-events:none}
+#buttons{position:fixed;z-index:4;left:10px;right:10px;bottom:max(9px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.up{border:2px solid rgba(45,75,51,.1);border-radius:15px;background:rgba(255,255,255,.95);min-height:57px;font:850 10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#234431;box-shadow:0 6px 17px rgba(43,72,45,.13)}
+.up b{display:block;font-size:18px;line-height:19px}.up small{display:block;color:#788477;font-size:9px;margin-top:2px}.up:active{transform:translateY(1px)}
+#toast{position:fixed;z-index:9;left:50%;top:23%;transform:translate(-50%,-50%);background:rgba(26,45,32,.91);color:#fff;padding:10px 14px;border-radius:15px;font-weight:850;font-size:12px;opacity:0;transition:.16s;pointer-events:none}#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<canvas id="g"></canvas>
+<div id="hud"><div id="stats" class="p"><span>💰 <b id="m">0</b></span><span>🪵 <b id="c">0/4</b></span><span>📦 <b id="q">0</b></span></div><div id="mission" class="p">나무를 터치하세요. 가까이 가면 자동으로 벱니다.</div></div>
+<div id="tip">화면 터치/드래그로 이동</div>
+<div id="toast"></div>
+<div id="buttons">
+<button class="up" data-k="axe"><b>🪓</b><span>도끼 Lv.1</span><small>💰 30</small></button>
+<button class="up" data-k="speed"><b>👟</b><span>이동 Lv.1</span><small>💰 40</small></button>
+<button class="up" data-k="bag"><b>🎒</b><span>가방 Lv.1</span><small>💰 55</small></button>
+<button class="up" data-k="mill"><b>⚙️</b><span>제재 Lv.1</span><small>💰 70</small></button>
+</div>
+<script>
+(function(){
+"use strict";
+var g=document.getElementById("g"),x=g.getContext("2d"),W=0,H=0,D=1,last=performance.now();
+var moneyEl=document.getElementById("m"),carryEl=document.getElementById("c"),queueEl=document.getElementById("q"),mission=document.getElementById("mission"),toastEl=document.getElementById("toast");
+var S={money:0,axe:1,speed:1,bag:1,mill:1,queued:0,target:{x:390,y:580},drag:false,step:0};
+var P={x:390,y:580,carry:0,face:0,chop:0,walk:0};
+var C={x:620,y:440,z:1},M={x:940,y:500,inputX:835,inputY:565,aX:900,bX:1120,y:540,saw:995,t:0};
+var bases={axe:30,speed:40,bag:55,mill:70},labels={axe:"도끼",speed:"이동",bag:"가방",mill:"제재"};
+var seed=[[170,165],[310,155],[455,185],[605,160],[170,300],[330,300],[495,315],[655,285],[150,445],[310,455],[480,470],[650,440],[180,625],[345,650],[520,630],[705,650],[735,200],[760,350]];
+var trees=seed.map(function(p,i){return{x:p[0],y:p[1],hp:3,on:true,re:0,ph:i*.55,hit:0}});
+var logs=[],boards=[],fx=[];
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function lerp(a,b,t){return a+(b-a)*t}
+function dist(a,b,c,d){return Math.hypot(a-c,b-d)}
+function cap(){return 3+S.bag}
+function moveSpeed(){return 150+S.speed*24}
+function chopEvery(){return Math.max(.22,.78-S.axe*.085)}
+function millEvery(){return Math.max(.22,1.05-S.mill*.09)}
+function cost(k){return Math.round(bases[k]*Math.pow(1.58,S[k]-1))}
+function resize(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;g.width=Math.floor(W*D);g.height=Math.floor(H*D);x.setTransform(D,0,0,D,0,0);C.z=clamp(Math.min(W/720,H/830),.72,1.15)}
+addEventListener("resize",resize,{passive:true});resize();
+function w2s(a,b){return{x:(a-C.x)*C.z+W/2,y:(b-C.y)*C.z+H/2}}
+function s2w(a,b){return{x:(a-W/2)/C.z+C.x,y:(b-H/2)/C.z+C.y}}
+function rr(a,b,c,d,r,col){x.beginPath();x.roundRect(a,b,c,d,r);x.fillStyle=col;x.fill()}
+function sh(a,b,rx,ry,al){x.fillStyle="rgba(40,59,40,"+al+")";x.beginPath();x.ellipse(a,b,rx,ry,0,0,Math.PI*2);x.fill()}
+function toast(t){toastEl.textContent=t;toastEl.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){toastEl.classList.remove("on")},850)}
+function burst(a,b,col,n){for(var i=0;i<n;i++)fx.push({x:a,y:b,vx:(Math.random()-.5)*120,vy:(Math.random()-.7)*120,l:.6+Math.random()*.25,c:col,s:2+Math.random()*3})}
+function spawnLogs(a,b){for(var i=0;i<2;i++)logs.push({x:a+(Math.random()-.5)*28,y:b+(Math.random()-.5)*18,a:Math.random()*6.28})}
+function point(e){var r=g.getBoundingClientRect(),p=s2w(e.clientX-r.left,e.clientY-r.top);S.target.x=clamp(p.x,30,1220);S.target.y=clamp(p.y,60,790)}
+g.addEventListener("pointerdown",function(e){S.drag=true;g.setPointerCapture&&g.setPointerCapture(e.pointerId);point(e)});
+g.addEventListener("pointermove",function(e){if(S.drag)point(e)});
+g.addEventListener("pointerup",function(){S.drag=false});g.addEventListener("pointercancel",function(){S.drag=false});
+document.querySelectorAll(".up").forEach(function(b){b.addEventListener("pointerdown",function(e){e.stopPropagation();var k=b.dataset.k,c=cost(k);if(S.money<c){toast("💰 "+c+" 필요");return}S.money-=c;S[k]++;buttons();toast(labels[k]+" Lv."+S[k]+"!");burst(P.x,P.y,"#ffd86a",10)})});
+function buttons(){document.querySelectorAll(".up").forEach(function(b){var k=b.dataset.k;b.querySelector("span").textContent=labels[k]+" Lv."+S[k];b.querySelector("small").textContent="💰 "+cost(k)})}buttons();
+function update(dt){
+ var dx=S.target.x-P.x,dy=S.target.y-P.y,d=Math.hypot(dx,dy);
+ if(d>4){var z=Math.min(d,moveSpeed()*dt);P.x+=dx/d*z;P.y+=dy/d*z;P.face=Math.atan2(dy,dx);P.walk+=dt*9}
+ C.x=lerp(C.x,clamp(P.x+190,410,850),Math.min(1,dt*2.4));C.y=lerp(C.y,clamp(P.y-10,300,610),Math.min(1,dt*2.4));
+ for(var i=logs.length-1;i>=0&&P.carry<cap();i--){if(dist(P.x,P.y,logs[i].x,logs[i].y)<44){P.carry++;burst(logs[i].x,logs[i].y,"#dca75e",5);logs.splice(i,1);S.step=Math.max(S.step,2)}}
+ P.chop-=dt;var near=null,nd=999;
+ trees.forEach(function(t){if(t.on){var d2=dist(P.x,P.y,t.x,t.y);if(d2<nd){nd=d2;near=t}}});
+ if(near&&nd<72&&P.carry<cap()&&P.chop<=0){P.chop=chopEvery();near.hp--;near.hit=.14;burst(near.x,near.y-25,"#976536",5);if(near.hp<=0){near.on=false;near.re=6.5;spawnLogs(near.x,near.y);burst(near.x,near.y,"#65a257",14);S.step=Math.max(S.step,1)}}
+ trees.forEach(function(t){t.hit=Math.max(0,t.hit-dt);if(!t.on){t.re-=dt;if(t.re<=0){t.on=true;t.hp=3}}});
+ if(P.carry&&dist(P.x,P.y,M.inputX,M.inputY)<88){S.queued+=P.carry;P.carry=0;burst(M.inputX,M.inputY,"#dca55e",10);S.step=Math.max(S.step,3)}
+ M.t+=dt;if(S.queued&&M.t>=millEvery()){M.t=0;S.queued--;boards.push({t:0,j:(Math.random()-.5)*7})}
+ for(i=boards.length-1;i>=0;i--){boards[i].t+=dt*(.29+S.mill*.014);if(boards[i].t>=1){S.money+=6+S.mill*2;burst(M.bX,M.y,"#ffd866",7);boards.splice(i,1);S.step=Math.max(S.step,4)}}
+ for(i=fx.length-1;i>=0;i--){var f=fx[i];f.l-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=110*dt;if(f.l<=0)fx.splice(i,1)}
+ moneyEl.textContent=Math.floor(S.money).toLocaleString();carryEl.textContent=P.carry+"/"+cap();queueEl.textContent=S.queued+boards.length;
+ mission.textContent=S.step===0?"나무를 터치하세요. 가까이 가면 자동으로 벱니다.":S.step===1?"떨어진 통나무 가까이 가면 자동으로 줍습니다.":S.step===2?"오른쪽 제재소 입구로 가져가세요.":S.step===3?"판재가 컨베이어를 지나 자동 판매됩니다.":"돈을 모아 아래 업그레이드를 눌러보세요.";
+}
+function ground(){x.fillStyle="#c7deb5";x.fillRect(0,0,W,H);for(var yy=0;yy<H;yy+=40)for(var xx=0;xx<W;xx+=42){x.fillStyle=((xx+yy)%84)?"rgba(69,112,63,.025)":"rgba(255,255,255,.03)";x.beginPath();x.arc(xx,yy,2.5,0,6.28);x.fill()}}
+function tree(t,time){if(!t.on)return;var p=w2s(t.x,t.y),z=C.z,s=Math.sin(time*.0015+t.ph)*2;x.save();x.translate(p.x,p.y);x.scale(z,z);sh(0,12,34,12,.15);if(t.hit)x.rotate(Math.sin(time*.08)*.04);rr(-8,-61,16,69,5,"#81512d");rr(-4,-59,5,58,2,"#a16b39");x.translate(s,-53);var b=[[-21,-9,23],[8,-14,27],[-3,-33,27],[-28,-31,21],[23,-31,21],[0,-53,24]];b.forEach(function(v,i){x.fillStyle=i%2?"#5e9a55":"#69a85d";x.beginPath();x.arc(v[0],v[1],v[2],0,6.28);x.fill()});x.restore()}
+function log(l){var p=w2s(l.x,l.y),z=C.z;x.save();x.translate(p.x,p.y);x.scale(z,z);x.rotate(l.a);sh(0,6,16,5,.13);rr(-17,-7,34,14,7,"#9a6136");x.fillStyle="#d09a61";x.beginPath();x.arc(16,0,6,0,6.28);x.fill();x.restore()}
+function mill(time){var p=w2s(M.x,M.y),z=C.z;x.save();x.translate(p.x,p.y);x.scale(z,z);sh(0,90,140,43,.17);rr(-118,-52,236,145,17,"#aa7a4a");rr(-109,-44,218,130,13,"#d8b376");x.fillStyle="#7a5232";for(var a=-98;a<100;a+=29)x.fillRect(a,-40,5,121);rr(-70,-24,140,67,9,"#62554a");rr(-62,-17,124,50,7,"#2b342f");x.fillStyle="#d5b06d";x.beginPath();x.moveTo(-125,-52);x.lineTo(0,-108);x.lineTo(125,-52);x.closePath();x.fill();x.fillStyle="#5a6e5b";x.font="900 15px system-ui";x.textAlign="center";x.fillText("제 재 소",0,-62);x.restore();
+ var ip=w2s(M.inputX,M.inputY);x.save();x.translate(ip.x,ip.y);x.scale(z,z);sh(0,15,48,18,.14);rr(-46,-18,92,44,11,"#d6ad65");x.fillStyle="#fff0b2";x.font="900 11px system-ui";x.textAlign="center";x.fillText("통나무 투입",0,8);x.restore();
+ var A=w2s(M.aX,M.y),B=w2s(M.bX,M.y);x.save();x.lineCap="round";x.lineWidth=33*z;x.strokeStyle="#5b6460";x.beginPath();x.moveTo(A.x,A.y);x.lineTo(B.x,B.y);x.stroke();x.lineWidth=21*z;x.strokeStyle="#878f89";x.stroke();x.restore();
+ var saw=w2s(M.saw,M.y);x.save();x.translate(saw.x,saw.y);x.scale(z,z);x.rotate(time*.005*(S.queued?1:.15));x.fillStyle="#e6e9e5";x.beginPath();for(var i=0;i<24;i++){var ang=i/24*6.28,r=i%2?17:21;x.lineTo(Math.cos(ang)*r,Math.sin(ang)*r)}x.closePath();x.fill();x.restore()}
+function player(time){var p=w2s(P.x,P.y),z=C.z,bob=Math.sin(P.walk)*2;x.save();x.translate(p.x,p.y);x.scale(z,z);sh(0,18,22,9,.2);x.translate(0,bob);rr(-10,-1,20,30,7,"#6e4931");rr(-14,-26,28,31,10,"#405f39");x.fillStyle="#f1c29d";x.beginPath();x.arc(0,-32,12,0,6.28);x.fill();x.fillStyle="#593a28";x.beginPath();x.arc(0,-38,12,3.14,6.28);x.fill();var leg=Math.sin(P.walk)*5;x.strokeStyle="#4b3426";x.lineWidth=4;x.beginPath();x.moveTo(-6,23);x.lineTo(-8+leg,34);x.moveTo(6,23);x.lineTo(8-leg,34);x.stroke();for(var i=0;i<P.carry;i++){x.save();x.translate(0,4-i*7);x.rotate(i%2?.06:-.06);rr(-18,-5,36,10,5,"#9a6136");x.restore()}x.restore()}
+function board(b){var A=w2s(M.aX,M.y),B=w2s(M.bX,M.y),xx=lerp(A.x,B.x,b.t),yy=lerp(A.y,B.y,b.t)+b.j*C.z;x.save();x.translate(xx,yy);x.rotate(.04*Math.sin(b.t*15));rr(-15*C.z,-5*C.z,30*C.z,10*C.z,2*C.z,"#d4a666");x.restore()}
+function target(){var p=w2s(S.target.x,S.target.y),z=C.z;x.strokeStyle="rgba(255,255,255,.88)";x.lineWidth=3*z;x.beginPath();x.ellipse(p.x,p.y,21*z,10*z,0,0,6.28);x.stroke()}
+function effects(){fx.forEach(function(f){var p=w2s(f.x,f.y);x.globalAlpha=clamp(f.l*1.7,0,1);x.fillStyle=f.c;x.beginPath();x.arc(p.x,p.y,f.s*C.z,0,6.28);x.fill()});x.globalAlpha=1}
+function draw(time){ground();mill(time);trees.forEach(function(t){tree(t,time)});logs.forEach(log);boards.forEach(board);target();player(time);effects()}
+function loop(now){var dt=Math.min(.033,(now-last)/1000||0);last=now;update(dt);draw(now);requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
