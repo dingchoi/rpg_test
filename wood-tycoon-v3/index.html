@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#c8dfb7">
+<title>Wood Yard V3</title>
+<style>
+:root{--ink:#173525;--glass:rgba(255,255,255,.94);--line:rgba(39,77,50,.14)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#c8dfb7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,sans-serif;color:var(--ink);touch-action:none}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;background:#c8dfb7}
+.panel{background:var(--glass);border:2px solid var(--line);box-shadow:0 8px 24px rgba(35,70,42,.13);backdrop-filter:blur(9px);border-radius:17px}
+#top{position:fixed;z-index:10;left:10px;right:10px;top:max(9px,env(safe-area-inset-top));display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+#stats{padding:8px 10px;display:flex;gap:9px;font-weight:900;font-size:11px;white-space:nowrap}#stats b{font-size:15px}
+#mission{padding:8px 10px;max-width:50vw;font-size:10px;line-height:1.4;font-weight:800}
+#progress{position:fixed;z-index:9;top:70px;left:50%;transform:translateX(-50%);width:min(56vw,280px);height:11px;border-radius:999px;background:rgba(25,56,35,.18);overflow:hidden;pointer-events:none}
+#progress>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f0c76a,#d79139);border-radius:inherit;transition:width .2s}
+#joystick{position:fixed;z-index:12;left:max(18px,env(safe-area-inset-left));bottom:max(24px,env(safe-area-inset-bottom));width:126px;height:126px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.55);box-shadow:inset 0 0 0 12px rgba(31,63,40,.06);touch-action:none}
+#stick{position:absolute;left:50%;top:50%;width:55px;height:55px;margin:-27.5px;border-radius:50%;background:rgba(255,255,255,.9);border:2px solid rgba(34,67,42,.18);box-shadow:0 6px 18px rgba(0,0,0,.16);transform:translate(0,0)}
+#shopToggle{position:fixed;z-index:13;right:max(15px,env(safe-area-inset-right));bottom:max(29px,env(safe-area-inset-bottom));width:72px;height:72px;border:0;border-radius:24px;background:rgba(255,255,255,.95);box-shadow:0 8px 22px rgba(34,69,40,.18);font:900 12px inherit;color:#214530;touch-action:manipulation}#shopToggle b{display:block;font-size:24px}
+#shop{position:fixed;z-index:20;right:10px;bottom:108px;width:min(76vw,340px);max-height:min(58vh,500px);overflow:auto;padding:10px;display:none;gap:7px;grid-template-columns:repeat(2,minmax(0,1fr));touch-action:pan-y}#shop.open{display:grid}
+.card{border:1px solid rgba(41,78,49,.1);border-radius:14px;padding:10px;background:#fff;min-width:0}.card h3{font-size:12px;margin:0 0 3px}.card p{font-size:9px;line-height:1.35;margin:0 0 7px;color:#6b7e70}.card button{width:100%;min-height:42px;border:0;border-radius:11px;background:#e9f2e3;color:#234633;font:900 10px inherit;padding:6px}.card button:disabled{opacity:.45}.card .lv{font-size:9px;font-weight:800;color:#809085;margin-bottom:5px}
+#toast{position:fixed;z-index:30;left:50%;top:21%;transform:translate(-50%,-50%) scale(.96);background:rgba(24,45,31,.92);color:#fff;padding:10px 14px;border-radius:15px;font-size:11px;font-weight:900;opacity:0;transition:.16s;pointer-events:none}#toast.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#hint{position:fixed;z-index:8;left:50%;bottom:18px;transform:translateX(-50%);font-size:9px;font-weight:800;color:rgba(24,51,32,.72);pointer-events:none}
+@media(max-width:420px){#mission{max-width:47vw}#shop{width:80vw}#joystick{width:118px;height:118px}.card{padding:9px}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="top">
+  <div id="stats" class="panel"><span>💰 <b id="money">0</b></span><span>🪵 <b id="carry">0/4</b></span><span>📦 <b id="queue">0</b></span><span>👷 <b id="workers">0</b></span></div>
+  <div id="mission" class="panel">조이스틱으로 움직여 나무에 가까이 가세요.</div>
+</div>
+<div id="progress"><i></i></div>
+<div id="joystick" aria-label="이동 조이스틱"><div id="stick"></div></div>
+<button id="shopToggle" type="button"><b>🏗️</b>확장</button>
+<div id="shop" class="panel" aria-label="업그레이드 메뉴">
+  <div class="card"><h3>🪓 도끼 강화</h3><div class="lv" data-lv="axe"></div><p>직접 벌목 속도가 빨라집니다.</p><button type="button" data-buy="axe"></button></div>
+  <div class="card"><h3>👟 이동 강화</h3><div class="lv" data-lv="speed"></div><p>주인공 이동 속도가 빨라집니다.</p><button type="button" data-buy="speed"></button></div>
+  <div class="card"><h3>🎒 운반 가방</h3><div class="lv" data-lv="bag"></div><p>한 번에 더 많은 통나무를 나릅니다.</p><button type="button" data-buy="bag"></button></div>
+  <div class="card"><h3>⚙️ 제재기</h3><div class="lv" data-lv="mill"></div><p>통나무를 판재로 더 빠르게 가공합니다.</p><button type="button" data-buy="mill"></button></div>
+  <div class="card"><h3>👷 벌목꾼 고용</h3><div class="lv" data-lv="worker"></div><p>나무를 찾아 자동으로 벌목하고 운반합니다.</p><button type="button" data-buy="worker"></button></div>
+  <div class="card"><h3>🛒 자동 적재기</h3><div class="lv" data-lv="loader"></div><p>바닥 통나무를 천천히 제재소로 옮깁니다.</p><button type="button" data-buy="loader"></button></div>
+  <div class="card"><h3>🚚 판매 트럭</h3><div class="lv" data-lv="truck"></div><p>판재 판매 단가와 자동 수익을 높입니다.</p><button type="button" data-buy="truck"></button></div>
+  <div class="card"><h3>🌲 숲 확장</h3><div class="lv" data-lv="forest"></div><p>새 벌목 구역과 나무를 추가합니다.</p><button type="button" data-buy="forest"></button></div>
+</div>
+<div id="toast"></div><div id="hint">왼쪽 조이스틱 · 오른쪽 확장 메뉴</div>
+<script>
+(()=>{'use strict';
+const $=s=>document.querySelector(s),canvas=$('#game'),ctx=canvas.getContext('2d',{alpha:false});
+const moneyEl=$('#money'),carryEl=$('#carry'),queueEl=$('#queue'),workersEl=$('#workers'),missionEl=$('#mission'),progressEl=$('#progress i'),toastEl=$('#toast');
+const joy=$('#joystick'),stick=$('#stick'),shop=$('#shop'),shopToggle=$('#shopToggle');
+let W=0,H=0,DPR=1,last=performance.now(),autosave=0;
+const WORLD={w:1800,h:1200},S={money:0,axe:1,speed:1,bag:1,mill:1,worker:0,loader:0,truck:0,forest:1,queued:0,sold:0};
+const P={x:440,y:640,r:17,carry:0,face:0,walk:0,chop:0},CAM={x:P.x,y:P.y,z:1};
+const MILL={x:1040,y:590,inputX:880,inputY:630,aX:930,bX:1190,yB:610,sawX:1030,t:0},joyState={active:false,id:null,x:0,y:0};
+const trees=[],logs=[],boards=[],fx=[],workers=[],BASE={axe:30,speed:45,bag:60,mill:80,worker:150,loader:260,truck:420,forest:650},NAME={axe:'도끼',speed:'이동',bag:'가방',mill:'제재',worker:'벌목꾼',loader:'적재기',truck:'트럭',forest:'숲'};
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}function lerp(a,b,t){return a+(b-a)*t}function dist(ax,ay,bx,by){return Math.hypot(ax-bx,ay-by)}
+function cap(){return 3+S.bag}function moveSpeed(){return 145+S.speed*25}function chopEvery(){return Math.max(.20,.8-S.axe*.085)}function millEvery(){return Math.max(.18,1.05-S.mill*.085)}function cost(k){return Math.round(BASE[k]*Math.pow(k==='forest'?1.85:1.6,S[k]-(k==='worker'||k==='loader'||k==='truck'?0:1)))}
+function toast(t){toastEl.textContent=t;toastEl.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>toastEl.classList.remove('on'),900)}
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=Math.floor(W*DPR);canvas.height=Math.floor(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);CAM.z=clamp(Math.min(W/700,H/850),.74,1.18)}
+addEventListener('resize',resize,{passive:true});resize();
+function w2s(x,y){return{x:(x-CAM.x)*CAM.z+W/2,y:(y-CAM.y)*CAM.z+H/2}}
+function rr(x,y,w,h,r,c){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=c;ctx.fill()}
+function shadow(x,y,rx,ry,a=.15){ctx.fillStyle='rgba(40,60,40,'+a+')';ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fill()}
+function makeTree(x,y,zone=1){trees.push({x,y,hp:3,on:true,re:0,hit:0,zone,ph:Math.random()*6.28})}
+function seedForest(){trees.length=0;for(let zone=1;zone<=4;zone++){const unlocked=zone<=S.forest,cx=zone===1?360:zone===2?650:zone===3?1330:1520,cy=zone%2?400:840;for(let i=0;i<16;i++){const a=i/16*6.28+(zone*.43),r=65+(i%5)*36;makeTree(cx+Math.cos(a)*r+(i%3)*18,cy+Math.sin(a)*r+(i%4)*14,zone);trees[trees.length-1].on=unlocked}}}
+seedForest();
+function save(){try{localStorage.setItem('woodYardV3',JSON.stringify({...S,px:P.x,py:P.y}))}catch(e){}}
+function load(){try{const v=JSON.parse(localStorage.getItem('woodYardV3')||'null');if(v){Object.keys(S).forEach(k=>{if(Number.isFinite(v[k]))S[k]=v[k]});P.x=Number.isFinite(v.px)?v.px:P.x;P.y=Number.isFinite(v.py)?v.py:P.y;seedForest();for(let i=0;i<S.worker;i++)spawnWorker(true)}}catch(e){}}
+load();
+function burst(x,y,c,n=8){for(let i=0;i<n;i++)fx.push({x,y,vx:(Math.random()-.5)*120,vy:(Math.random()-.8)*115,l:.55+Math.random()*.35,c,s:2+Math.random()*3})}
+function spawnLogs(x,y,n=2){for(let i=0;i<n;i++)logs.push({x:x+(Math.random()-.5)*26,y:y+(Math.random()-.5)*20,a:Math.random()*6.28})}
+function nearestTree(x,y){let best=null,bd=1e9;for(const t of trees){if(!t.on||t.zone>S.forest)continue;const d=dist(x,y,t.x,t.y);if(d<bd){bd=d;best=t}}return[best,bd]}
+function chopTree(t,power=1){if(!t||!t.on)return;t.hp-=power;t.hit=.14;burst(t.x,t.y-25,'#986537',4);if(t.hp<=0){t.on=false;t.re=7+Math.random()*3;spawnLogs(t.x,t.y,2);burst(t.x,t.y,'#6aa65a',12)}}
+function spawnWorker(silent=false){const i=workers.length;workers.push({x:950+(i%3)*24,y:710+Math.floor(i/3)*22,face:0,state:'seek',target:null,carry:0,chop:Math.random()*.6,walk:0,homeX:910+(i%4)*24,homeY:730+Math.floor(i/4)*20});if(!silent)toast('👷 벌목꾼이 합류했습니다!')}
+function setJoyFromEvent(e){const r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.31,mag=Math.hypot(dx,dy)||1,q=Math.min(max,mag);joyState.x=dx/mag*(q/max);joyState.y=dy/mag*(q/max);stick.style.transform='translate('+(joyState.x*max)+'px,'+(joyState.y*max)+'px)'}
+joy.addEventListener('pointerdown',e=>{joyState.active=true;joyState.id=e.pointerId;joy.setPointerCapture&&joy.setPointerCapture(e.pointerId);setJoyFromEvent(e)});
+joy.addEventListener('pointermove',e=>{if(joyState.active&&e.pointerId===joyState.id)setJoyFromEvent(e)});
+function joyEnd(e){if(e.pointerId!==joyState.id)return;joyState.active=false;joyState.id=null;joyState.x=joyState.y=0;stick.style.transform='translate(0,0)'}joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
+shopToggle.addEventListener('click',()=>{shop.classList.toggle('open');shopToggle.innerHTML=shop.classList.contains('open')?'<b>✕</b>닫기':'<b>🏗️</b>확장'});
+function refreshShop(){document.querySelectorAll('[data-lv]').forEach(el=>{const k=el.dataset.lv;el.textContent='Lv.'+S[k]});document.querySelectorAll('[data-buy]').forEach(b=>{const k=b.dataset.buy,c=cost(k),locked=(k==='loader'&&S.worker<1)||(k==='truck'&&S.mill<2)||(k==='forest'&&S.sold<25);b.disabled=locked||S.money<c;b.textContent=locked?(k==='loader'?'벌목꾼 필요':k==='truck'?'제재 Lv.2 필요':'판재 25개 판매 필요'):'💰 '+c+' 강화'})}
+shop.addEventListener('click',e=>{const b=e.target.closest('[data-buy]');if(!b)return;const k=b.dataset.buy,c=cost(k);if(b.disabled||S.money<c)return;S.money-=c;if(k==='worker'){S.worker++;spawnWorker()}else if(k==='forest'){S.forest=Math.min(4,S.forest+1);trees.filter(t=>t.zone<=S.forest&&!t.on&&t.re===0).forEach(t=>{t.on=true;t.hp=3});toast('🌲 새 벌목 구역이 열렸습니다!')}else S[k]++;refreshShop();burst(P.x,P.y,'#ffd76b',12);save()});
+function updatePlayer(dt){let vx=joyState.x,vy=joyState.y,mag=Math.hypot(vx,vy);if(mag>.08){const sp=moveSpeed()*(.55+.45*Math.min(1,mag));P.x=clamp(P.x+vx*sp*dt,30,WORLD.w-30);P.y=clamp(P.y+vy*sp*dt,80,WORLD.h-40);P.face=Math.atan2(vy,vx);P.walk+=dt*10*Math.min(1,mag)}P.chop-=dt;const [near,nd]=nearestTree(P.x,P.y);if(near&&nd<76&&P.carry<cap()&&P.chop<=0){P.chop=chopEvery();chopTree(near,1)}for(let i=logs.length-1;i>=0&&P.carry<cap();i--){if(dist(P.x,P.y,logs[i].x,logs[i].y)<44){P.carry++;burst(logs[i].x,logs[i].y,'#d8a25e',4);logs.splice(i,1)}}if(P.carry&&dist(P.x,P.y,MILL.inputX,MILL.inputY)<92){S.queued+=P.carry;P.carry=0;burst(MILL.inputX,MILL.inputY,'#d5a45f',9)}}
+function updateWorkers(dt){for(const w of workers){w.chop-=dt;w.walk+=dt*7;if(w.state==='seek'){const [t]=nearestTree(w.x,w.y);if(t){w.target=t;w.state='tree'}else w.state='home'}if(w.state==='tree'){const t=w.target;if(!t||!t.on){w.state='seek';continue}const dx=t.x-w.x,dy=t.y-w.y,d=Math.hypot(dx,dy);if(d>68){const sp=95+S.speed*3;w.x+=dx/d*sp*dt;w.y+=dy/d*sp*dt;w.face=Math.atan2(dy,dx)}else if(w.chop<=0){w.chop=Math.max(.38,1.15-S.axe*.035);chopTree(t,1);if(!t.on){w.carry=2;w.state='mill'}}}
+if(w.state==='mill'){const dx=MILL.inputX-w.x,dy=MILL.inputY-w.y,d=Math.hypot(dx,dy);if(d>76){const sp=100+S.speed*3;w.x+=dx/d*sp*dt;w.y+=dy/d*sp*dt;w.face=Math.atan2(dy,dx)}else{S.queued+=w.carry;w.carry=0;w.state='seek';burst(MILL.inputX,MILL.inputY,'#d5a45f',5)}}if(w.state==='home'){const dx=w.homeX-w.x,dy=w.homeY-w.y,d=Math.hypot(dx,dy);if(d>10){w.x+=dx/d*70*dt;w.y+=dy/d*70*dt}else w.state='seek'}}}
+function updateAutomation(dt){if(S.loader>0&&logs.length){S._loader=(S._loader||0)+dt;if(S._loader>Math.max(.5,2.4-S.loader*.25)){S._loader=0;const l=logs.shift();S.queued++;burst(l.x,l.y,'#f0c266',5)}}MILL.t+=dt;if(S.queued&&MILL.t>=millEvery()){MILL.t=0;S.queued--;boards.push({t:0,j:(Math.random()-.5)*8})}for(let i=boards.length-1;i>=0;i--){const b=boards[i];b.t+=dt*(.27+S.mill*.018);if(b.t>=1){const gain=8+S.truck*3;S.money+=gain;S.sold++;burst(MILL.bX,MILL.yB,'#ffd668',6);boards.splice(i,1)}}if(S.truck>0){S._truck=(S._truck||0)+dt;if(S._truck>10){S._truck=0;S.money+=S.truck*12;toast('🚚 납품 보너스 +'+(S.truck*12))}}}
+function updateTrees(dt){for(const t of trees){t.hit=Math.max(0,t.hit-dt);if(!t.on&&t.re>0){t.re-=dt;if(t.re<=0&&t.zone<=S.forest){t.on=true;t.hp=3;t.re=0}}}}
+function updateFX(dt){for(let i=fx.length-1;i>=0;i--){const f=fx[i];f.l-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=110*dt;if(f.l<=0)fx.splice(i,1)}}
+function updateUI(){moneyEl.textContent=Math.floor(S.money).toLocaleString();carryEl.textContent=P.carry+'/'+cap();queueEl.textContent=S.queued+boards.length;workersEl.textContent=S.worker;progressEl.style.width=clamp((S.sold%25)/25*100,0,100)+'%';if(S.worker===0)missionEl.textContent='직접 나무를 베어 150원을 모아 벌목꾼을 고용해보세요.';else if(S.loader===0)missionEl.textContent='자동 벌목 시작! 다음은 자동 적재기를 해금해보세요.';else if(S.truck===0)missionEl.textContent='자동 적재까지 완료. 제재 Lv.2 후 판매 트럭을 해금하세요.';else if(S.forest<4)missionEl.textContent='공장이 돌아갑니다. 판재를 팔아 새 숲을 확장하세요.';else missionEl.textContent='완전 자동화! 직접 벌목과 확장 업그레이드로 생산량을 올려보세요.';refreshShop()}
+function update(dt){updatePlayer(dt);updateWorkers(dt);updateAutomation(dt);updateTrees(dt);updateFX(dt);CAM.x=lerp(CAM.x,clamp(P.x,280,WORLD.w-280),1-Math.pow(.00008,dt));CAM.y=lerp(CAM.y,clamp(P.y,260,WORLD.h-260),1-Math.pow(.00008,dt));autosave+=dt;if(autosave>5){autosave=0;save()}updateUI()}
+function ground(){ctx.fillStyle='#c8dfb7';ctx.fillRect(0,0,W,H);const tl=w2s(0,0),br=w2s(WORLD.w,WORLD.h);ctx.fillStyle='#b9d7a8';ctx.fillRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);for(let y=Math.floor((CAM.y-H/CAM.z)/48)*48;y<CAM.y+H/CAM.z;y+=48){for(let x=Math.floor((CAM.x-W/CAM.z)/52)*52;x<CAM.x+W/CAM.z;x+=52){const p=w2s(x,y);ctx.fillStyle=((x+y)/4)%2?'rgba(73,115,68,.025)':'rgba(255,255,255,.026)';ctx.beginPath();ctx.arc(p.x,p.y,2.2,0,6.28);ctx.fill()}}for(let z=2;z<=4;z++){if(z>S.forest){const cx=z===2?650:z===3?1330:1520,cy=z%2?400:840,p=w2s(cx,cy);ctx.save();ctx.translate(p.x,p.y);ctx.scale(CAM.z,CAM.z);ctx.fillStyle='rgba(43,64,45,.24)';ctx.beginPath();ctx.arc(0,0,170,0,6.28);ctx.fill();ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='900 20px system-ui';ctx.textAlign='center';ctx.fillText('🔒 숲 확장 필요',0,0);ctx.restore()}}}
+function drawTree(t,time){if(!t.on||t.zone>S.forest)return;const p=w2s(t.x,t.y),z=CAM.z,s=Math.sin(time*.0015+t.ph)*1.6;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);shadow(0,12,34,12,.13);if(t.hit)ctx.rotate(Math.sin(time*.08)*.04);rr(-8,-58,16,66,5,'#81512d');rr(-4,-56,5,56,2,'#a16b39');ctx.translate(s,-51);const b=[[-21,-9,23],[8,-14,27],[-3,-33,27],[-28,-31,21],[23,-31,21],[0,-53,24]];b.forEach((v,i)=>{ctx.fillStyle=i%2?'#5f9b55':'#6cab5f';ctx.beginPath();ctx.arc(v[0],v[1],v[2],0,6.28);ctx.fill()});ctx.restore()}
+function drawLog(l){const p=w2s(l.x,l.y),z=CAM.z;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);ctx.rotate(l.a);shadow(0,6,16,5,.12);rr(-17,-7,34,14,7,'#996136');ctx.fillStyle='#d09a61';ctx.beginPath();ctx.arc(16,0,6,0,6.28);ctx.fill();ctx.restore()}
+function drawMill(time){const p=w2s(MILL.x,MILL.y),z=CAM.z;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);shadow(0,86,142,40,.17);rr(-116,-49,232,139,17,'#aa7a4a');rr(-108,-41,216,125,13,'#d9b679');ctx.fillStyle='#765136';for(let a=-96;a<100;a+=28)ctx.fillRect(a,-38,5,117);ctx.fillStyle='#d5b06d';ctx.beginPath();ctx.moveTo(-124,-49);ctx.lineTo(0,-106);ctx.lineTo(124,-49);ctx.closePath();ctx.fill();ctx.fillStyle='#526654';ctx.font='900 15px system-ui';ctx.textAlign='center';ctx.fillText('제 재 소',0,-61);ctx.restore();const ip=w2s(MILL.inputX,MILL.inputY);ctx.save();ctx.translate(ip.x,ip.y);ctx.scale(z,z);rr(-46,-18,92,44,11,'#d5ad65');ctx.fillStyle='#fff2ba';ctx.font='900 11px system-ui';ctx.textAlign='center';ctx.fillText('투입',0,8);ctx.restore();const A=w2s(MILL.aX,MILL.yB),B=w2s(MILL.bX,MILL.yB);ctx.save();ctx.lineCap='round';ctx.lineWidth=34*z;ctx.strokeStyle='#59625d';ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.lineWidth=21*z;ctx.strokeStyle='#88908a';ctx.stroke();ctx.restore();const saw=w2s(MILL.sawX,MILL.yB);ctx.save();ctx.translate(saw.x,saw.y);ctx.scale(z,z);ctx.rotate(time*.004*(S.queued?1:.2));ctx.fillStyle='#e6e9e5';ctx.beginPath();for(let i=0;i<24;i++){const a=i/24*6.28,r=i%2?17:21;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.restore();if(S.loader>0){const lp=w2s(850,520);ctx.save();ctx.translate(lp.x,lp.y);ctx.scale(z,z);rr(-25,-18,50,36,10,'#e9b84f');ctx.fillStyle='#6d5b31';ctx.font='900 20px system-ui';ctx.textAlign='center';ctx.fillText('🛒',0,8);ctx.restore()}if(S.truck>0){const tp=w2s(1275,655);ctx.save();ctx.translate(tp.x,tp.y);ctx.scale(z,z);rr(-44,-20,88,38,8,'#d66b4f');rr(-6,-37,37,22,6,'#f0d4a6');ctx.fillStyle='#333';ctx.beginPath();ctx.arc(-26,20,8,0,6.28);ctx.arc(28,20,8,0,6.28);ctx.fill();ctx.restore()}}
+function drawHuman(o,isWorker=false){const p=w2s(o.x,o.y),z=CAM.z,bob=Math.sin(o.walk||0)*1.7;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);shadow(0,18,22,8,.18);ctx.translate(0,bob);rr(-10,-1,20,29,7,isWorker?'#c88939':'#6b4931');rr(-14,-25,28,30,10,isWorker?'#527049':'#405f39');ctx.fillStyle='#efc29d';ctx.beginPath();ctx.arc(0,-31,12,0,6.28);ctx.fill();ctx.fillStyle=isWorker?'#d8a33e':'#593a28';ctx.beginPath();ctx.arc(0,-37,12,3.1,6.28);ctx.fill();const leg=Math.sin(o.walk||0)*4;ctx.strokeStyle='#493426';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-6,22);ctx.lineTo(-8+leg,33);ctx.moveTo(6,22);ctx.lineTo(8-leg,33);ctx.stroke();for(let i=0;i<(o.carry||0);i++){ctx.save();ctx.translate(0,3-i*7);ctx.rotate(i%2?.06:-.06);rr(-17,-5,34,10,5,'#996136');ctx.restore()}ctx.restore()}
+function drawBoard(b){const A=w2s(MILL.aX,MILL.yB),B=w2s(MILL.bX,MILL.yB),xx=lerp(A.x,B.x,b.t),yy=lerp(A.y,B.y,b.t)+b.j*CAM.z;rr(xx-15*CAM.z,yy-5*CAM.z,30*CAM.z,10*CAM.z,2*CAM.z,'#d4a666')}
+function drawFX(){for(const f of fx){const p=w2s(f.x,f.y);ctx.globalAlpha=clamp(f.l*1.8,0,1);ctx.fillStyle=f.c;ctx.beginPath();ctx.arc(p.x,p.y,f.s*CAM.z,0,6.28);ctx.fill()}ctx.globalAlpha=1}
+function draw(time){ground();drawMill(time);trees.forEach(t=>drawTree(t,time));logs.forEach(drawLog);boards.forEach(drawBoard);workers.forEach(w=>drawHuman(w,true));drawHuman(P,false);drawFX()}
+function loop(now){const dt=Math.min(.033,(now-last)/1000||0);last=now;update(dt);draw(now);requestAnimationFrame(loop)}
+refreshShop();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
