@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#c8dfb7">
+<title>Wood Yard V5</title>
+<style>
+:root{--ink:#173525;--glass:rgba(255,255,255,.95);--line:rgba(39,77,50,.14);--muted:#748277}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#c8dfb7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,sans-serif;color:var(--ink);touch-action:none}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;background:#c8dfb7}
+.panel{background:var(--glass);border:2px solid var(--line);box-shadow:0 8px 24px rgba(35,70,42,.13);backdrop-filter:blur(9px);border-radius:17px}
+#top{position:fixed;z-index:10;left:9px;right:9px;top:max(8px,env(safe-area-inset-top));display:flex;justify-content:space-between;gap:7px;pointer-events:none}
+#stats{padding:8px 9px;display:flex;gap:7px;font-weight:900;font-size:9px;white-space:nowrap}
+#stats b{font-size:13px}
+#mission{padding:8px 9px;max-width:48vw;font-size:9px;line-height:1.38;font-weight:800}
+#progress{position:fixed;z-index:9;top:66px;left:50%;transform:translateX(-50%);width:min(58vw,290px);height:9px;border-radius:999px;background:rgba(25,56,35,.18);overflow:hidden;pointer-events:none}
+#progress>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f0c76a,#d79139);border-radius:inherit;transition:width .2s}
+#joystick{position:fixed;z-index:12;left:max(17px,env(safe-area-inset-left));bottom:max(23px,env(safe-area-inset-bottom));width:122px;height:122px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.56);box-shadow:inset 0 0 0 12px rgba(31,63,40,.06);touch-action:none}
+#stick{position:absolute;left:50%;top:50%;width:53px;height:53px;margin:-26.5px;border-radius:50%;background:rgba(255,255,255,.92);border:2px solid rgba(34,67,42,.18);box-shadow:0 6px 18px rgba(0,0,0,.16);transform:translate(0,0)}
+#manageToggle{position:fixed;z-index:13;right:max(14px,env(safe-area-inset-right));bottom:max(28px,env(safe-area-inset-bottom));width:74px;height:74px;border:0;border-radius:24px;background:rgba(255,255,255,.96);box-shadow:0 8px 22px rgba(34,69,40,.18);font:900 11px inherit;color:#214530;touch-action:manipulation}
+#manageToggle b{display:block;font-size:24px}
+#manage{position:fixed;z-index:20;right:8px;bottom:109px;width:min(86vw,380px);max-height:min(65vh,560px);overflow:hidden;padding:8px;display:none;touch-action:pan-y}
+#manage.open{display:block}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:7px}
+.tab{min-height:40px;border:0;border-radius:11px;background:#edf3e9;color:#36523d;font:900 11px inherit}
+.tab.active{background:#dcebd4}
+.pane{display:none;max-height:calc(min(65vh,560px) - 60px);overflow:auto;overscroll-behavior:contain;padding-right:1px}
+.pane.active{display:block}
+#shopGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.card{border:1px solid rgba(41,78,49,.1);border-radius:14px;padding:9px;background:#fff;min-width:0}
+.card h3{font-size:11px;margin:0 0 3px}.card p{font-size:8.5px;line-height:1.35;margin:0 0 7px;color:#6b7e70}.card .lv{font-size:9px;font-weight:800;color:#809085;margin-bottom:5px}
+.card button,.placeBtn,#cancelPlace,#resetLayout{width:100%;min-height:40px;border:0;border-radius:11px;background:#e9f2e3;color:#234633;font:900 10px inherit;padding:6px}
+.card button:disabled,.placeBtn:disabled{opacity:.45}
+#buildInfo{font-size:9px;line-height:1.45;color:#607267;background:#f6f8f4;border-radius:12px;padding:9px;margin-bottom:7px}
+#placeList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.placeBtn{background:#fff;border:1px solid rgba(41,78,49,.1);min-height:48px}
+#resetLayout{margin-top:7px;background:#f5ece6;color:#76513d}
+#placeBanner{position:fixed;z-index:28;left:50%;top:max(88px,calc(env(safe-area-inset-top) + 78px));transform:translateX(-50%);display:none;width:min(88vw,390px);padding:9px 10px;background:rgba(25,47,32,.92);color:#fff;border-radius:14px;font-size:10px;font-weight:850;line-height:1.35;text-align:center}
+#placeBanner.on{display:block}
+#cancelPlace{margin-top:7px;min-height:34px;background:rgba(255,255,255,.16);color:#fff}
+#toast{position:fixed;z-index:31;left:50%;top:22%;transform:translate(-50%,-50%) scale(.96);background:rgba(24,45,31,.92);color:#fff;padding:10px 14px;border-radius:15px;font-size:11px;font-weight:900;opacity:0;transition:.16s;pointer-events:none}
+#toast.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#hint{position:fixed;z-index:8;left:50%;bottom:17px;transform:translateX(-50%);font-size:8.5px;font-weight:800;color:rgba(24,51,32,.65);pointer-events:none}
+@media(max-width:420px){
+  #mission{max-width:45vw}#manage{width:89vw}#joystick{width:114px;height:114px}
+  .card{padding:8px}.card h3{font-size:10px}#stats{gap:5px;font-size:8.5px}#stats b{font-size:12px}
+}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="top">
+  <div id="stats" class="panel">
+    <span>💰 <b id="money">0</b></span>
+    <span>🪵 <b id="carry">0/4</b></span>
+    <span>📦 <b id="stock">0/8</b></span>
+    <span>👷 <b id="workers">0</b></span>
+    <span>🏭 <b id="millCount">1</b></span>
+    <span>🚚 <b id="truckCount">0</b></span>
+  </div>
+  <div id="mission" class="panel">조이스틱으로 움직여 나무를 베어보세요.</div>
+</div>
+<div id="progress"><i></i></div>
+
+<div id="joystick" aria-label="이동 조이스틱"><div id="stick"></div></div>
+<button id="manageToggle" type="button"><b>🏗️</b>관리</button>
+
+<div id="manage" class="panel">
+  <div class="tabs">
+    <button class="tab active" type="button" data-tab="upgrade">업그레이드</button>
+    <button class="tab" type="button" data-tab="build">시설 배치</button>
+  </div>
+  <div id="upgradePane" class="pane active"><div id="shopGrid"></div></div>
+  <div id="buildPane" class="pane">
+    <div id="buildInfo">구매한 시설을 원하는 곳으로 옮길 수 있습니다. 시설을 선택한 뒤 맵을 터치하면 배치됩니다. 제재소→창고는 컨베이어, 창고→차고는 도로가 자동으로 연결됩니다.</div>
+    <div id="placeList"></div>
+    <button id="resetLayout" type="button">기본 배치로 되돌리기</button>
+  </div>
+</div>
+
+<div id="placeBanner">
+  <div id="placeText">시설 배치 중</div>
+  <button id="cancelPlace" type="button">배치 취소</button>
+</div>
+
+<div id="toast"></div>
+<div id="hint">왼쪽 조이스틱 · 오른쪽 관리 메뉴</div>
+
+<script>
+(()=>{'use strict';
+
+const $=s=>document.querySelector(s),canvas=$('#game'),ctx=canvas.getContext('2d',{alpha:false});
+const moneyEl=$('#money'),carryEl=$('#carry'),stockEl=$('#stock'),workersEl=$('#workers'),millCountEl=$('#millCount'),truckCountEl=$('#truckCount'),missionEl=$('#mission'),progressEl=$('#progress i'),toastEl=$('#toast');
+const joy=$('#joystick'),stick=$('#stick'),manage=$('#manage'),manageToggle=$('#manageToggle'),shopGrid=$('#shopGrid'),placeList=$('#placeList'),placeBanner=$('#placeBanner'),placeText=$('#placeText');
+let W=0,H=0,DPR=1,last=performance.now(),autosave=0,uiTick=0;
+
+const WORLD={w:2000,h:1300};
+const defaults={
+  camp:{x:850,y:880},
+  warehouse:{x:1320,y:480},
+  depot:{x:1510,y:690},
+  nursery:{x:600,y:930},
+  mills:[
+    {x:1040,y:590},
+    {x:1120,y:830},
+    {x:1390,y:850},
+    {x:1450,y:560}
+  ]
+};
+const POS=JSON.parse(JSON.stringify(defaults));
+
+const S={
+  money:0,axe:1,speed:1,bag:1,mill:1,
+  worker:0,workerCarry:0,foreman:0,
+  warehouse:0,sawmills:1,conveyor:0,
+  loaders:0,trucks:0,truckPower:0,road:0,
+  forest:1,nursery:0,
+  queued:0,stock:0,sold:0
+};
+
+const P={x:430,y:670,carry:0,walk:0,chop:0};
+const CAM={x:P.x,y:P.y,z:1};
+const trees=[],logs=[],boards=[],fx=[],workers=[],loaderCarts=[],trucks=[],millTimers=[0,0,0,0];
+const joyState={active:false,id:null,x:0,y:0};
+const placement={id:null};
+
+const BASE={
+  axe:30,speed:45,bag:60,mill:90,
+  worker:150,workerCarry:180,foreman:1100,
+  warehouse:250,sawmills:650,conveyor:360,
+  loaders:330,trucks:560,truckPower:320,road:460,
+  forest:800,nursery:950
+};
+
+const SHOP=[
+  ['axe','🪓 도끼 강화','직접 벌목 속도가 빨라집니다.'],
+  ['speed','👟 이동 강화','주인공 이동 속도가 빨라집니다.'],
+  ['bag','🎒 개인 가방','주인공 통나무 운반량이 늘어납니다.'],
+  ['worker','👷 벌목꾼 고용','작업자를 한 명 더 고용합니다.'],
+  ['workerCarry','🧺 일꾼 운반량','벌목꾼 1명이 더 많은 통나무를 싣습니다.'],
+  ['foreman','📋 현장 반장','모든 벌목꾼의 이동·벌목 속도 상승.'],
+  ['mill','⚙️ 제재 기술','모든 제재소의 가공 속도가 상승합니다.'],
+  ['sawmills','🏭 제재소 추가','2·3·4호 제재소를 추가해 병렬 가공합니다.'],
+  ['warehouse','🏚️ 목재 창고','판재 보관량을 크게 늘립니다.'],
+  ['conveyor','➰ 컨베이어','제재소→창고 판재 이동 속도가 빨라집니다.'],
+  ['loaders','🛒 적재 카트 추가','통나무 회수 차량을 한 대 더 운행합니다.'],
+  ['trucks','🚚 납품 트럭 추가','납품 차량을 추가해 동시 배송량을 늘립니다.'],
+  ['truckPower','📦 트럭 적재량','트럭 한 대의 적재량과 판매 단가 상승.'],
+  ['road','🛣️ 도로 포장','트럭과 적재 차량 이동 속도가 상승합니다.'],
+  ['forest','🌲 숲 확장','새 벌목 구역을 개방합니다.'],
+  ['nursery','🌱 묘목장','나무 재생 속도를 높입니다.']
+];
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function lerp(a,b,t){return a+(b-a)*t}
+function dist(ax,ay,bx,by){return Math.hypot(ax-bx,ay-by)}
+function cap(){return 3+S.bag}
+function workerCap(){return 2+S.workerCarry*2}
+function stockCap(){return 8+S.warehouse*24}
+function moveSpeed(){return 145+S.speed*25}
+function chopEvery(){return Math.max(.2,.82-S.axe*.085)}
+function workerFactor(){return 1+S.foreman*.18}
+function millEvery(){return Math.max(.17,1.08-S.mill*.085)}
+function conveyorSpeed(){return 120+S.conveyor*55}
+function roadSpeed(){return 1+S.road*.16}
+function truckCap(){return 6+S.truckPower*4}
+function truckPrice(){return 11+S.truckPower*2}
+function respawnTime(){return Math.max(2.8,8.5-S.nursery*1.35)}
+
+function cost(k){
+  let v=S[k],pow=1.6,exp=v-1;
+  if(['worker','workerCarry','foreman','warehouse','conveyor','loaders','trucks','truckPower','road','nursery'].includes(k))exp=v;
+  if(k==='sawmills')exp=Math.max(0,v-1);
+  if(k==='forest'){pow=1.88;exp=v-1}
+  if(k==='worker'||k==='sawmills')pow=1.58;
+  if(k==='warehouse'||k==='foreman'||k==='nursery')pow=1.7;
+  return Math.round(BASE[k]*Math.pow(pow,Math.max(0,exp)));
+}
+
+function toast(t){
+  toastEl.textContent=t;toastEl.classList.add('on');
+  clearTimeout(toast.t);toast.t=setTimeout(()=>toastEl.classList.remove('on'),950);
+}
+
+function resize(){
+  DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
+  canvas.width=Math.floor(W*DPR);canvas.height=Math.floor(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  CAM.z=clamp(Math.min(W/700,H/850),.72,1.18);
+}
+addEventListener('resize',resize,{passive:true});resize();
+
+function w2s(x,y){return{x:(x-CAM.x)*CAM.z+W/2,y:(y-CAM.y)*CAM.z+H/2}}
+function s2w(x,y){return{x:(x-W/2)/CAM.z+CAM.x,y:(y-H/2)/CAM.z+CAM.y}}
+function rr(x,y,w,h,r,c){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=c;ctx.fill()}
+function shadow(x,y,rx,ry,a=.15){ctx.fillStyle='rgba(40,60,40,'+a+')';ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fill()}
+
+function burst(x,y,c,n=8){
+  for(let i=0;i<n;i++)fx.push({x,y,vx:(Math.random()-.5)*120,vy:(Math.random()-.8)*115,l:.55+Math.random()*.35,c,s:2+Math.random()*3});
+}
+
+function makeTree(x,y,zone=1){trees.push({x,y,hp:3,on:true,re:0,hit:0,zone,ph:Math.random()*6.28})}
+function seedForest(){
+  trees.length=0;
+  for(let zone=1;zone<=4;zone++){
+    const unlocked=zone<=S.forest;
+    const cx=zone===1?350:zone===2?670:zone===3?1450:1710;
+    const cy=zone%2?360:930;
+    for(let i=0;i<19;i++){
+      const a=i/19*6.28+zone*.41,r=72+(i%5)*39;
+      makeTree(cx+Math.cos(a)*r+(i%3)*17,cy+Math.sin(a)*r+(i%4)*13,zone);
+      trees[trees.length-1].on=unlocked;
+    }
+  }
+}
+seedForest();
+
+function copyPositions(src){
+  if(!src)return;
+  ['camp','warehouse','depot','nursery'].forEach(k=>{
+    if(src[k]&&Number.isFinite(src[k].x)&&Number.isFinite(src[k].y)){POS[k].x=src[k].x;POS[k].y=src[k].y}
+  });
+  if(Array.isArray(src.mills)){
+    for(let i=0;i<Math.min(4,src.mills.length);i++){
+      if(src.mills[i]&&Number.isFinite(src.mills[i].x)&&Number.isFinite(src.mills[i].y)){POS.mills[i].x=src.mills[i].x;POS.mills[i].y=src.mills[i].y}
+    }
+  }
+}
+
+function save(){
+  try{
+    localStorage.setItem('woodYardV5',JSON.stringify({state:S,px:P.x,py:P.y,pos:POS}));
+  }catch(e){}
+}
+
+function load(){
+  try{
+    let v=JSON.parse(localStorage.getItem('woodYardV5')||'null');
+    if(v&&v.state){
+      Object.keys(S).forEach(k=>{if(Number.isFinite(v.state[k]))S[k]=v.state[k]});
+      P.x=Number.isFinite(v.px)?v.px:P.x;P.y=Number.isFinite(v.py)?v.py:P.y;
+      copyPositions(v.pos);
+    }else{
+      const old=JSON.parse(localStorage.getItem('woodYardV4')||'null');
+      if(old){
+        ['money','axe','speed','bag','mill','worker','warehouse','forest','nursery','foreman','queued','stock','sold'].forEach(k=>{if(Number.isFinite(old[k]))S[k]=old[k]});
+        S.loaders=old.loader>0?Math.min(4,Math.max(1,old.loader)):0;
+        S.trucks=old.truck>0?1:0;
+        S.truckPower=old.truck>0?Math.max(0,old.truck-1):0;
+        P.x=Number.isFinite(old.px)?old.px:P.x;P.y=Number.isFinite(old.py)?old.py:P.y;
+      }
+    }
+  }catch(e){}
+  seedForest();
+  workers.length=0;
+  for(let i=0;i<S.worker;i++)spawnWorker(true);
+  syncFleets();
+}
+load();
+
+function spawnLogs(x,y,n=2){for(let i=0;i<n;i++)logs.push({x:x+(Math.random()-.5)*26,y:y+(Math.random()-.5)*20,a:Math.random()*6.28})}
+
+function nearestTree(x,y){
+  let best=null,bd=1e9;
+  for(const t of trees){
+    if(!t.on||t.zone>S.forest)continue;
+    const d=dist(x,y,t.x,t.y);
+    if(d<bd){bd=d;best=t}
+  }
+  return[best,bd];
+}
+
+function nearestLog(x,y){
+  let best=null,bd=1e9,idx=-1;
+  for(let i=0;i<logs.length;i++){
+    const l=logs[i],d=dist(x,y,l.x,l.y);
+    if(d<bd){bd=d;best=l;idx=i}
+  }
+  return[best,bd,idx];
+}
+
+function chopTree(t){
+  if(!t||!t.on)return false;
+  t.hp--;t.hit=.14;burst(t.x,t.y-25,'#986537',4);
+  if(t.hp<=0){
+    t.on=false;t.re=respawnTime();spawnLogs(t.x,t.y,2);burst(t.x,t.y,'#6aa65a',12);return true;
+  }
+  return false;
+}
+
+function takeNearbyLogs(x,y,n){
+  let got=0;
+  while(got<n){
+    let bi=-1,bd=1e9;
+    for(let i=0;i<logs.length;i++){
+      const d=dist(x,y,logs[i].x,logs[i].y);
+      if(d<bd){bd=d;bi=i}
+    }
+    if(bi<0||bd>90)break;
+    logs.splice(bi,1);got++;
+  }
+  return got;
+}
+
+function millGeom(i){
+  const m=POS.mills[i];
+  return{
+    x:m.x,y:m.y,
+    input:{x:m.x-135,y:m.y+58},
+    start:{x:m.x+95,y:m.y+66},
+    saw:{x:m.x,y:m.y+66}
+  };
+}
+
+function nearestMillInput(x,y){
+  let idx=0,bd=1e9,p=null;
+  for(let i=0;i<S.sawmills;i++){
+    const g=millGeom(i),d=dist(x,y,g.input.x,g.input.y);
+    if(d<bd){bd=d;idx=i;p=g.input}
+  }
+  return[idx,p,bd];
+}
+
+function spawnWorker(silent=false){
+  const i=workers.length;
+  workers.push({
+    x:POS.camp.x+(i%3)*22,y:POS.camp.y+35+Math.floor(i/3)*20,
+    state:'seek',target:null,carry:0,chop:Math.random()*.6,walk:0,
+    homeOffsetX:-45+(i%4)*30,homeOffsetY:55+Math.floor(i/4)*20
+  });
+  if(!silent)toast('👷 벌목꾼이 합류했습니다!');
+}
+
+function syncFleets(){
+  while(loaderCarts.length<S.loaders){
+    const i=loaderCarts.length;
+    loaderCarts.push({x:POS.camp.x+90+i*18,y:POS.camp.y+70+i*12,state:'idle',carry:0,walk:0});
+  }
+  if(loaderCarts.length>S.loaders)loaderCarts.length=S.loaders;
+
+  while(trucks.length<S.trucks){
+    const i=trucks.length;
+    trucks.push({x:POS.depot.x-20-i*26,y:POS.depot.y+16+i*15,state:'idle',t:Math.random()*1.5,load:0,index:i});
+  }
+  if(trucks.length>S.trucks)trucks.length=S.trucks;
+}
+
+function setJoyFromEvent(e){
+  const r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.31,mag=Math.hypot(dx,dy)||1,q=Math.min(max,mag);
+  joyState.x=dx/mag*(q/max);joyState.y=dy/mag*(q/max);
+  stick.style.transform='translate('+(joyState.x*max)+'px,'+(joyState.y*max)+'px)';
+}
+joy.addEventListener('pointerdown',e=>{
+  if(placement.id)return;
+  joyState.active=true;joyState.id=e.pointerId;joy.setPointerCapture&&joy.setPointerCapture(e.pointerId);setJoyFromEvent(e);
+});
+joy.addEventListener('pointermove',e=>{if(joyState.active&&e.pointerId===joyState.id)setJoyFromEvent(e)});
+function joyEnd(e){
+  if(e.pointerId!==joyState.id)return;
+  joyState.active=false;joyState.id=null;joyState.x=joyState.y=0;stick.style.transform='translate(0,0)';
+}
+joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
+
+manageToggle.addEventListener('click',()=>{
+  manage.classList.toggle('open');
+  manageToggle.innerHTML=manage.classList.contains('open')?'<b>✕</b>닫기':'<b>🏗️</b>관리';
+});
+
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===btn));
+    $('#upgradePane').classList.toggle('active',btn.dataset.tab==='upgrade');
+    $('#buildPane').classList.toggle('active',btn.dataset.tab==='build');
+    if(btn.dataset.tab==='build')refreshBuildList();
+  });
+});
+
+function maxed(k){
+  if(k==='sawmills')return S.sawmills>=4;
+  if(k==='loaders')return S.loaders>=4;
+  if(k==='trucks')return S.trucks>=5;
+  if(k==='forest')return S.forest>=4;
+  if(k==='workerCarry')return S.workerCarry>=4;
+  return false;
+}
+
+function lockedReason(k){
+  if(k==='workerCarry'&&S.worker<1)return'벌목꾼 1명 필요';
+  if(k==='foreman'&&S.worker<3)return'벌목꾼 3명 필요';
+  if(k==='warehouse'&&S.worker<1)return'벌목꾼 1명 필요';
+  if(k==='sawmills'&&(S.warehouse<1||S.sold<15))return'창고 + 판재 15개 판매 필요';
+  if(k==='conveyor'&&S.warehouse<1)return'목재 창고 필요';
+  if(k==='loaders'&&S.warehouse<1)return'목재 창고 필요';
+  if(k==='trucks'&&(S.warehouse<1||S.mill<2))return'창고 + 제재 기술 Lv.2 필요';
+  if(k==='truckPower'&&S.trucks<1)return'트럭 1대 필요';
+  if(k==='road'&&S.trucks<1)return'트럭 1대 필요';
+  if(k==='forest'&&S.sold<30)return'판재 30개 판매 필요';
+  if(k==='nursery'&&S.forest<2)return'숲 2구역 필요';
+  return'';
+}
+
+function cardLevel(k){
+  if(k==='worker')return S.worker+'명';
+  if(k==='sawmills')return S.sawmills+'동';
+  if(k==='loaders')return S.loaders+'대';
+  if(k==='trucks')return S.trucks+'대';
+  return'Lv.'+S[k];
+}
+
+function refreshShop(){
+  shopGrid.innerHTML='';
+  SHOP.forEach(item=>{
+    const k=item[0],title=item[1],desc=item[2],reason=lockedReason(k),c=cost(k),isMax=maxed(k);
+    const card=document.createElement('div');card.className='card';
+    const h=document.createElement('h3');h.textContent=title;
+    const lv=document.createElement('div');lv.className='lv';lv.textContent=cardLevel(k);
+    const p=document.createElement('p');p.textContent=desc;
+    const b=document.createElement('button');b.type='button';b.dataset.buy=k;
+    b.disabled=!!reason||isMax||S.money<c;
+    b.textContent=isMax?'최대':reason||('💰 '+c+' '+(k==='worker'?'고용':'강화'));
+    card.append(h,lv,p,b);shopGrid.appendChild(card);
+  });
+}
+
+shopGrid.addEventListener('click',e=>{
+  const b=e.target.closest('[data-buy]');if(!b)return;
+  const k=b.dataset.buy,reason=lockedReason(k),c=cost(k);
+  if(reason){toast(reason);return}
+  if(maxed(k))return;
+  if(S.money<c){toast('💰 '+c+' 필요');return}
+  S.money-=c;
+
+  if(k==='worker'){
+    S.worker++;spawnWorker();
+  }else if(k==='forest'){
+    S.forest=Math.min(4,S.forest+1);
+    trees.filter(t=>t.zone<=S.forest&&!t.on&&t.re===0).forEach(t=>{t.on=true;t.hp=3});
+    toast('🌲 새 숲 구역이 열렸습니다!');
+  }else if(k==='sawmills'){
+    S.sawmills=Math.min(4,S.sawmills+1);
+    toast('🏭 제재소 '+S.sawmills+'호가 가동을 시작합니다!');
+  }else if(k==='loaders'){
+    S.loaders=Math.min(4,S.loaders+1);syncFleets();toast('🛒 적재 카트 '+S.loaders+'대 운행!');
+  }else if(k==='trucks'){
+    S.trucks=Math.min(5,S.trucks+1);syncFleets();toast('🚚 납품 트럭 '+S.trucks+'대 운행!');
+  }else{
+    S[k]++;
+    if(k==='workerCarry')toast('🧺 벌목꾼 1인 운반량 '+workerCap()+'개!');
+    if(k==='warehouse')toast('🏚️ 창고 용량 '+stockCap()+'!');
+    if(k==='conveyor')toast('➰ 컨베이어 속도가 빨라졌습니다!');
+    if(k==='truckPower')toast('📦 트럭 적재량 '+truckCap()+'!');
+    if(k==='road')toast('🛣️ 차량 이동 속도가 빨라졌습니다!');
+    if(k==='nursery')toast('🌱 숲 회복 속도가 빨라졌습니다!');
+    if(k==='foreman')toast('📋 벌목꾼 전체 효율이 상승했습니다!');
+  }
+  burst(P.x,P.y,'#ffd76b',12);refreshShop();refreshBuildList();save();
+});
+
+function buildName(id){
+  if(id==='camp')return'👷 벌목 캠프';
+  if(id==='warehouse')return'🏚️ 목재 창고';
+  if(id==='depot')return'🚚 트럭 차고';
+  if(id==='nursery')return'🌱 묘목장';
+  if(id.startsWith('mill-'))return'🏭 제재소 '+(Number(id.split('-')[1])+1)+'호';
+  return id;
+}
+
+function beginPlacement(id){
+  placement.id=id;manage.classList.remove('open');manageToggle.innerHTML='<b>🏗️</b>관리';
+  placeText.textContent=buildName(id)+' 배치 중 — 맵에서 원하는 위치를 터치하세요.';
+  placeBanner.classList.add('on');
+  joyState.active=false;joyState.id=null;joyState.x=joyState.y=0;stick.style.transform='translate(0,0)';
+}
+
+function cancelPlacement(){
+  placement.id=null;placeBanner.classList.remove('on');
+}
+$('#cancelPlace').addEventListener('click',cancelPlacement);
+
+function refreshBuildList(){
+  placeList.innerHTML='';
+  const ids=[];
+  if(S.worker>0)ids.push('camp');
+  for(let i=0;i<S.sawmills;i++)ids.push('mill-'+i);
+  if(S.warehouse>0)ids.push('warehouse');
+  if(S.trucks>0)ids.push('depot');
+  if(S.nursery>0)ids.push('nursery');
+
+  if(!ids.length){
+    const d=document.createElement('div');d.id='buildInfo';d.textContent='아직 배치할 시설이 없습니다. 업그레이드 탭에서 시설을 먼저 구매하세요.';placeList.appendChild(d);return;
+  }
+
+  ids.forEach(id=>{
+    const b=document.createElement('button');b.type='button';b.className='placeBtn';b.textContent=buildName(id)+' 이동';b.dataset.place=id;placeList.appendChild(b);
+  });
+}
+placeList.addEventListener('click',e=>{
+  const b=e.target.closest('[data-place]');if(!b)return;beginPlacement(b.dataset.place);
+});
+
+$('#resetLayout').addEventListener('click',()=>{
+  Object.assign(POS.camp,defaults.camp);Object.assign(POS.warehouse,defaults.warehouse);Object.assign(POS.depot,defaults.depot);Object.assign(POS.nursery,defaults.nursery);
+  for(let i=0;i<4;i++)Object.assign(POS.mills[i],defaults.mills[i]);
+  syncFleets();toast('기본 배치로 복원했습니다.');save();
+});
+
+canvas.addEventListener('pointerdown',e=>{
+  if(!placement.id)return;
+  const r=canvas.getBoundingClientRect(),p=s2w(e.clientX-r.left,e.clientY-r.top);
+  const x=clamp(p.x,120,WORLD.w-170),y=clamp(p.y,150,WORLD.h-120);
+  if(placement.id==='camp'){POS.camp.x=x;POS.camp.y=y}
+  else if(placement.id==='warehouse'){POS.warehouse.x=x;POS.warehouse.y=y}
+  else if(placement.id==='depot'){POS.depot.x=x;POS.depot.y=y}
+  else if(placement.id==='nursery'){POS.nursery.x=x;POS.nursery.y=y}
+  else if(placement.id.startsWith('mill-')){
+    const idx=Number(placement.id.split('-')[1]);POS.mills[idx].x=x;POS.mills[idx].y=y;
+  }
+  syncFleets();toast(buildName(placement.id)+' 배치 완료');cancelPlacement();save();
+});
+
+function updatePlayer(dt){
+  const vx=joyState.x,vy=joyState.y,mag=Math.hypot(vx,vy);
+  if(mag>.08){
+    const sp=moveSpeed()*(.55+.45*Math.min(1,mag));
+    P.x=clamp(P.x+vx*sp*dt,30,WORLD.w-30);P.y=clamp(P.y+vy*sp*dt,80,WORLD.h-40);P.walk+=dt*10*Math.min(1,mag);
+  }
+  P.chop-=dt;
+  const [near,nd]=nearestTree(P.x,P.y);
+  if(near&&nd<76&&P.carry<cap()&&P.chop<=0){P.chop=chopEvery();chopTree(near)}
+  for(let i=logs.length-1;i>=0&&P.carry<cap();i--){
+    if(dist(P.x,P.y,logs[i].x,logs[i].y)<44){P.carry++;burst(logs[i].x,logs[i].y,'#d8a25e',4);logs.splice(i,1)}
+  }
+  if(P.carry){
+    const [,input,d]=nearestMillInput(P.x,P.y);
+    if(input&&d<92){S.queued+=P.carry;P.carry=0;burst(input.x,input.y,'#d5a45f',9)}
+  }
+}
+
+function updateWorkers(dt){
+  for(const w of workers){
+    const fac=workerFactor();w.chop-=dt;w.walk+=dt*7*fac;
+    if(w.state==='seek'){
+      if(w.carry>=workerCap()){w.state='mill'}
+      else{
+        const [t]=nearestTree(w.x,w.y);
+        if(t){w.target=t;w.state='tree'}
+        else if(w.carry>0)w.state='mill';
+        else w.state='home';
+      }
+    }
+
+    if(w.state==='tree'){
+      const t=w.target;
+      if(!t||!t.on){w.state='seek';continue}
+      const dx=t.x-w.x,dy=t.y-w.y,d=Math.hypot(dx,dy);
+      if(d>68){
+        const sp=(95+S.speed*3)*fac;w.x+=dx/d*sp*dt;w.y+=dy/d*sp*dt;
+      }else if(w.chop<=0){
+        w.chop=Math.max(.3,(1.12-S.axe*.03)/fac);
+        const fell=chopTree(t);
+        if(fell){
+          w.carry+=takeNearbyLogs(t.x,t.y,Math.max(0,workerCap()-w.carry));
+          w.state=w.carry>=workerCap()?'mill':'seek';
+        }
+      }
+    }
+
+    if(w.state==='mill'){
+      const [,input,d]=nearestMillInput(w.x,w.y);
+      if(!input){w.state='seek';continue}
+      const dx=input.x-w.x,dy=input.y-w.y;
+      if(d>76){
+        const sp=(100+S.speed*3)*fac;w.x+=dx/d*sp*dt;w.y+=dy/d*sp*dt;
+      }else{
+        S.queued+=w.carry;w.carry=0;w.state='seek';burst(input.x,input.y,'#d5a45f',5);
+      }
+    }
+
+    if(w.state==='home'){
+      const hx=POS.camp.x+w.homeOffsetX,hy=POS.camp.y+w.homeOffsetY,dx=hx-w.x,dy=hy-w.y,d=Math.hypot(dx,dy);
+      if(d>10){w.x+=dx/d*70*fac*dt;w.y+=dy/d*70*fac*dt}else w.state='seek';
+    }
+  }
+}
+
+function updateLoaders(dt){
+  syncFleets();
+  const sf=roadSpeed();
+  for(const c of loaderCarts){
+    c.walk+=dt*6;
+    if(c.state==='idle'){
+      const [l]=nearestLog(c.x,c.y);
+      if(l)c.state='fetch';
+    }else if(c.state==='fetch'){
+      const [l,d,idx]=nearestLog(c.x,c.y);
+      if(!l){c.state='idle';continue}
+      const dx=l.x-c.x,dy=l.y-c.y;
+      if(d>20){const sp=(112+S.loaders*7)*sf;c.x+=dx/d*sp*dt;c.y+=dy/d*sp*dt}
+      else{logs.splice(idx,1);c.carry=1;c.state='deliver'}
+    }else if(c.state==='deliver'){
+      const [,input,d]=nearestMillInput(c.x,c.y);
+      if(!input){c.state='idle';continue}
+      const dx=input.x-c.x,dy=input.y-c.y;
+      if(d>35){const sp=(122+S.loaders*7)*sf;c.x+=dx/d*sp*dt;c.y+=dy/d*sp*dt}
+      else{S.queued+=c.carry;c.carry=0;burst(input.x,input.y,'#f0c266',5);c.state='idle'}
+    }
+  }
+}
+
+function updateProduction(dt){
+  for(let i=0;i<S.sawmills;i++){
+    millTimers[i]+=dt;
+    const canStore=S.warehouse>0?(S.stock+boards.length)<stockCap():true;
+    if(S.queued>0&&canStore&&millTimers[i]>=millEvery()){
+      millTimers[i]=0;S.queued--;boards.push({mill:i,t:0});
+    }
+  }
+
+  for(let i=boards.length-1;i>=0;i--){
+    const b=boards[i],g=millGeom(b.mill);
+    let dest=S.warehouse>0?POS.warehouse:{x:g.x+180,y:g.y+65};
+    const route=Math.max(80,dist(g.start.x,g.start.y,dest.x,dest.y));
+    b.t+=dt*conveyorSpeed()/route;
+    if(b.t>=1){
+      if(S.warehouse>0)S.stock++;
+      else{S.money+=8;S.sold++}
+      burst(dest.x,dest.y,'#e8bd62',5);boards.splice(i,1);
+    }
+  }
+
+  if(S.warehouse>0&&S.trucks===0&&S.stock>0){
+    S._market=(S._market||0)+dt;
+    if(S._market>3.2){S._market=0;S.stock--;S.money+=8;S.sold++;burst(POS.warehouse.x+70,POS.warehouse.y,'#ffd668',5)}
+  }
+}
+
+function updateTrucks(dt){
+  syncFleets();
+  const exitX=WORLD.w-45,sf=roadSpeed();
+  for(const t of trucks){
+    const depotX=POS.depot.x-25-t.index*24,depotY=POS.depot.y+18+t.index*15;
+    if(t.state==='idle'){
+      const d=dist(t.x,t.y,depotX,depotY);
+      if(d>8){const dx=depotX-t.x,dy=depotY-t.y,s=150*sf;t.x+=dx/d*s*dt;t.y+=dy/d*s*dt;continue}
+      t.x=depotX;t.y=depotY;t.t+=dt;
+      const batch=Math.min(S.stock,truckCap());
+      if(batch>0&&t.t>1.5+.3*t.index){t.t=0;t.load=batch;S.stock-=batch;t.state='leaving'}
+    }else if(t.state==='leaving'){
+      const dx=exitX-t.x,dy=700-t.y,d=Math.hypot(dx,dy),s=(170+S.truckPower*10)*sf;
+      if(d>14){t.x+=dx/d*s*dt;t.y+=dy/d*s*dt}
+      else{t.state='away';t.t=0}
+    }else if(t.state==='away'){
+      t.t+=dt;
+      if(t.t>1.25){
+        const gain=t.load*truckPrice();S.money+=gain;S.sold+=t.load;toast('🚚 납품 +'+gain);t.load=0;t.state='returning';
+      }
+    }else if(t.state==='returning'){
+      const dx=depotX-t.x,dy=depotY-t.y,d=Math.hypot(dx,dy),s=(185+S.truckPower*10)*sf;
+      if(d>12){t.x+=dx/d*s*dt;t.y+=dy/d*s*dt}
+      else{t.x=depotX;t.y=depotY;t.state='idle';t.t=0}
+    }
+  }
+}
+
+function updateTrees(dt){
+  for(const t of trees){
+    t.hit=Math.max(0,t.hit-dt);
+    if(!t.on&&t.re>0){t.re-=dt;if(t.re<=0&&t.zone<=S.forest){t.on=true;t.hp=3;t.re=0}}
+  }
+}
+
+function updateFX(dt){
+  for(let i=fx.length-1;i>=0;i--){
+    const f=fx[i];f.l-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=110*dt;
+    if(f.l<=0)fx.splice(i,1);
+  }
+}
+
+function missionText(){
+  if(S.worker===0)return'직접 벌어 150원을 모아 첫 벌목꾼을 고용하세요.';
+  if(S.workerCarry===0)return'일꾼 운반량을 올리면 왕복 횟수가 줄어듭니다.';
+  if(S.warehouse===0)return'목재 창고를 지으면 판재를 모아 대량 납품할 수 있습니다.';
+  if(S.loaders===0)return'적재 카트를 추가하면 바닥 통나무 회수까지 자동화됩니다.';
+  if(S.sawmills<2)return'판재 15개 판매 후 제재소 2호를 추가해 병렬 생산을 시작하세요.';
+  if(S.conveyor===0)return'제재소가 늘었습니다. 컨베이어를 강화해 창고 병목을 줄이세요.';
+  if(S.trucks===0)return'제재 기술 Lv.2 후 트럭을 추가해 대량 납품하세요.';
+  if(S.trucks<2)return'트럭 2대로 늘리면 납품 대기 없이 계속 출발합니다.';
+  if(S.forest<2)return'판재 30개 판매 후 새 숲을 열어 원목 공급량을 늘리세요.';
+  if(S.nursery===0)return'묘목장을 지으면 벌목된 나무가 더 빨리 돌아옵니다.';
+  if(S.worker>=3&&S.foreman===0)return'벌목꾼 3명 이상이면 반장으로 전체 작업 효율을 올릴 수 있습니다.';
+  if(S.sawmills<4)return'제재소·차량·창고를 더 늘려 목재 단지를 확장하세요.';
+  return'대형 자동 목재 단지 가동 중! 시설 배치로 동선을 더 짧게 최적화해보세요.';
+}
+
+function updateUI(){
+  moneyEl.textContent=Math.floor(S.money).toLocaleString();
+  carryEl.textContent=P.carry+'/'+cap();
+  stockEl.textContent=S.stock+'/'+stockCap();
+  workersEl.textContent=S.worker;
+  millCountEl.textContent=S.sawmills;
+  truckCountEl.textContent=S.trucks;
+  missionEl.textContent=missionText();
+  progressEl.style.width=clamp((S.sold%30)/30*100,0,100)+'%';
+  if((uiTick++%12)===0)refreshShop();
+}
+
+function update(dt){
+  updatePlayer(dt);updateWorkers(dt);updateLoaders(dt);updateProduction(dt);updateTrucks(dt);updateTrees(dt);updateFX(dt);
+  CAM.x=lerp(CAM.x,clamp(P.x,280,WORLD.w-280),1-Math.pow(.00008,dt));
+  CAM.y=lerp(CAM.y,clamp(P.y,260,WORLD.h-260),1-Math.pow(.00008,dt));
+  autosave+=dt;if(autosave>5){autosave=0;save()}
+  updateUI();
+}
+
+function drawRoadPath(a,b,width,level){
+  const A=w2s(a.x,a.y),B=w2s(b.x,b.y);
+  ctx.save();ctx.lineCap='round';ctx.lineWidth=width*CAM.z;
+  ctx.strokeStyle=level>0?'#aaa28c':'#c8b790';ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();
+  if(level>0){
+    ctx.lineWidth=2.5*CAM.z;ctx.strokeStyle='rgba(255,255,255,.55)';ctx.setLineDash([18*CAM.z,15*CAM.z]);ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+function drawConveyor(a,b,time){
+  const A=w2s(a.x,a.y),B=w2s(b.x,b.y),z=CAM.z;
+  ctx.save();ctx.lineCap='round';ctx.lineWidth=16*z;ctx.strokeStyle='#6b7470';ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();
+  ctx.lineWidth=7*z;ctx.strokeStyle='#9aa39e';ctx.stroke();
+  const dx=B.x-A.x,dy=B.y-A.y,len=Math.hypot(dx,dy),count=Math.max(2,Math.floor(len/(28*z)));
+  for(let i=0;i<count;i++){
+    const q=((i/count)+(time*.00006*(1+S.conveyor*.25)))%1;
+    const x=A.x+dx*q,y=A.y+dy*q;
+    ctx.fillStyle='#cfd4d0';ctx.beginPath();ctx.arc(x,y,2.7*z,0,6.28);ctx.fill();
+  }
+  ctx.restore();
+}
+
+function ground(time){
+  ctx.fillStyle='#c8dfb7';ctx.fillRect(0,0,W,H);
+  const tl=w2s(0,0),br=w2s(WORLD.w,WORLD.h);ctx.fillStyle='#b9d7a8';ctx.fillRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
+
+  for(let y=Math.floor((CAM.y-H/CAM.z)/48)*48;y<CAM.y+H/CAM.z;y+=48){
+    for(let x=Math.floor((CAM.x-W/CAM.z)/52)*52;x<CAM.x+W/CAM.z;x+=52){
+      const p=w2s(x,y);ctx.fillStyle=((x+y)/4)%2?'rgba(73,115,68,.023)':'rgba(255,255,255,.025)';ctx.beginPath();ctx.arc(p.x,p.y,2.2,0,6.28);ctx.fill();
+    }
+  }
+
+  if(S.worker>0){
+    let nearest=POS.mills[0],bd=1e9;
+    for(let i=0;i<S.sawmills;i++){const d=dist(POS.camp.x,POS.camp.y,POS.mills[i].x,POS.mills[i].y);if(d<bd){bd=d;nearest=POS.mills[i]}}
+    drawRoadPath(POS.camp,nearest,42,0);
+  }
+
+  if(S.warehouse>0&&S.trucks>0){
+    drawRoadPath(POS.warehouse,POS.depot,78,S.road);
+    drawRoadPath(POS.depot,{x:WORLD.w-40,y:700},78,S.road);
+  }
+
+  if(S.warehouse>0){
+    for(let i=0;i<S.sawmills;i++){
+      const g=millGeom(i);drawConveyor(g.start,POS.warehouse,time);
+    }
+  }
+
+  for(let z=2;z<=4;z++){
+    if(z>S.forest){
+      const cx=z===2?670:z===3?1450:1710,cy=z%2?360:930,p=w2s(cx,cy);
+      ctx.save();ctx.translate(p.x,p.y);ctx.scale(CAM.z,CAM.z);ctx.fillStyle='rgba(43,64,45,.24)';ctx.beginPath();ctx.arc(0,0,180,0,6.28);ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.92)';ctx.font='900 20px system-ui';ctx.textAlign='center';ctx.fillText('🔒 숲 확장 필요',0,0);ctx.restore();
+    }
+  }
+}
+
+function drawTree(t,time){
+  if(!t.on||t.zone>S.forest)return;
+  const p=w2s(t.x,t.y),z=CAM.z,s=Math.sin(time*.0015+t.ph)*1.6;
+  ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);shadow(0,12,34,12,.13);if(t.hit)ctx.rotate(Math.sin(time*.08)*.04);
+  rr(-8,-58,16,66,5,'#81512d');rr(-4,-56,5,56,2,'#a16b39');ctx.translate(s,-51);
+  const b=[[-21,-9,23],[8,-14,27],[-3,-33,27],[-28,-31,21],[23,-31,21],[0,-53,24]];
+  b.forEach((v,i)=>{ctx.fillStyle=i%2?'#5f9b55':'#6cab5f';ctx.beginPath();ctx.arc(v[0],v[1],v[2],0,6.28);ctx.fill()});ctx.restore();
+}
+
+function drawLog(l){
+  const p=w2s(l.x,l.y),z=CAM.z;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);ctx.rotate(l.a);shadow(0,6,16,5,.12);
+  rr(-17,-7,34,14,7,'#996136');ctx.fillStyle='#d09a61';ctx.beginPath();ctx.arc(16,0,6,0,6.28);ctx.fill();ctx.restore();
+}
+
+function drawPad(wx,wy,label,visible){
+  if(visible)return;
+  const p=w2s(wx,wy),z=CAM.z;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);
+  ctx.fillStyle='rgba(255,255,255,.28)';ctx.beginPath();ctx.roundRect(-66,-38,132,76,15);ctx.fill();
+  ctx.strokeStyle='rgba(42,72,48,.28)';ctx.lineWidth=2;ctx.setLineDash([8,7]);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='rgba(42,72,48,.66)';ctx.font='800 12px system-ui';ctx.textAlign='center';ctx.fillText(label,0,4);ctx.restore();
+}
+
+function drawCamp(time){
+  drawPad(POS.camp.x,POS.camp.y,'👷 벌목 캠프',S.worker>0);
+  if(S.worker<=0)return;
+  const p=w2s(POS.camp.x,POS.camp.y),z=CAM.z;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);shadow(0,58,98,27,.13);
+  const tents=Math.min(6,1+Math.floor((S.worker-1)/2));
+  for(let i=0;i<tents;i++){
+    const ox=-72+(i%3)*58,oy=-10+Math.floor(i/3)*47;ctx.fillStyle=i%2?'#b56c45':'#c9864f';
+    ctx.beginPath();ctx.moveTo(ox-23,oy+28);ctx.lineTo(ox,oy-9);ctx.lineTo(ox+23,oy+28);ctx.closePath();ctx.fill();rr(ox-3,oy+8,6,20,2,'#5b4635');
+  }
+  ctx.fillStyle='#df9b42';ctx.beginPath();ctx.arc(52,37,9+Math.sin(time*.01)*1.2,0,6.28);ctx.fill();
+  ctx.fillStyle='#76513a';ctx.font='900 12px system-ui';ctx.textAlign='center';ctx.fillText('벌목 캠프 · '+S.worker+'명',0,-39);ctx.restore();
+}
+
+function drawWarehouse(){
+  drawPad(POS.warehouse.x,POS.warehouse.y,'🏚️ 목재 창고',S.warehouse>0);
+  if(S.warehouse<=0)return;
+  const p=w2s(POS.warehouse.x,POS.warehouse.y),z=CAM.z;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);shadow(0,56,95+S.warehouse*5,29,.15);
+  const ww=150+Math.min(70,S.warehouse*18);
+  rr(-ww/2,-40,ww,98,11,'#b57d4e');rr(-ww/2+8,-32,ww-16,82,8,'#d6a56b');
+  ctx.fillStyle='#6e4a31';for(let i=-ww/2+20;i<ww/2-10;i+=25)ctx.fillRect(i,-28,4,74);
+  ctx.fillStyle='#8f5940';ctx.beginPath();ctx.moveTo(-ww/2-10,-40);ctx.lineTo(0,-84);ctx.lineTo(ww/2+10,-40);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#4d604f';ctx.font='900 12px system-ui';ctx.textAlign='center';ctx.fillText('목재 창고  '+S.stock+'/'+stockCap(),0,-49);
+  const stacks=Math.min(8,Math.ceil(S.stock/Math.max(1,stockCap()/8)));
+  for(let i=0;i<stacks;i++){const sx=-ww/2+21+(i%4)*31,sy=5+Math.floor(i/4)*24;for(let j=0;j<3;j++)rr(sx,sy-j*7,25,5,2,'#d5a468')}
+  ctx.restore();
+}
+
+function drawNursery(){
+  drawPad(POS.nursery.x,POS.nursery.y,'🌱 묘목장',S.nursery>0);
+  if(S.nursery<=0)return;
+  const p=w2s(POS.nursery.x,POS.nursery.y),z=CAM.z;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);shadow(0,45,100,22,.11);
+  rr(-100,-45,200,90,12,'rgba(225,238,208,.76)');ctx.strokeStyle='#8a9c74';ctx.lineWidth=3;ctx.strokeRect(-92,-38,184,75);
+  for(let r=0;r<3;r++)for(let c=0;c<6;c++){const sx=-70+c*28,sy=-20+r*22;ctx.fillStyle='#4d934d';ctx.beginPath();ctx.arc(sx,sy,5+S.nursery,0,6.28);ctx.fill();ctx.fillStyle='#744d2e';ctx.fillRect(sx-1,sy+4,2,7)}
+  ctx.fillStyle='#4d604f';ctx.font='900 12px system-ui';ctx.textAlign='center';ctx.fillText('묘목장 Lv.'+S.nursery,0,-54);ctx.restore();
+}
+
+function drawMill(i,time){
+  const g=millGeom(i),p=w2s(g.x,g.y),z=CAM.z;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);shadow(0,70,112,33,.16);
+  rr(-94,-42,188,116,14,'#aa7a4a');rr(-87,-35,174,101,11,'#d9b679');
+  ctx.fillStyle='#765136';for(let a=-74;a<77;a+=25)ctx.fillRect(a,-31,4,91);
+  ctx.fillStyle=i%2?'#c98a54':'#d5b06d';ctx.beginPath();ctx.moveTo(-101,-42);ctx.lineTo(0,-92);ctx.lineTo(101,-42);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#526654';ctx.font='900 13px system-ui';ctx.textAlign='center';ctx.fillText('제재소 '+(i+1)+'호',0,-54);ctx.restore();
+
+  const ip=w2s(g.input.x,g.input.y);ctx.save();ctx.translate(ip.x,ip.y);ctx.scale(z,z);rr(-38,-15,76,36,9,'#d5ad65');ctx.fillStyle='#fff2ba';ctx.font='900 10px system-ui';ctx.textAlign='center';ctx.fillText('투입',0,7);ctx.restore();
+
+  const saw=w2s(g.saw.x,g.saw.y);ctx.save();ctx.translate(saw.x,saw.y);ctx.scale(z,z);ctx.rotate(time*.004*((S.queued||boards.some(b=>b.mill===i))?1:.2));ctx.fillStyle='#e6e9e5';ctx.beginPath();
+  for(let k=0;k<22;k++){const a=k/22*6.28,r=k%2?15:19;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.restore();
+}
+
+function drawLoader(c,i){
+  const p=w2s(c.x,c.y),z=CAM.z;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);shadow(0,15,28,9,.16);
+  rr(-27,-17,54,35,10,i%2?'#dba443':'#e7b44a');rr(-14,-26,28,13,5,'#f0d278');
+  ctx.fillStyle='#333';ctx.beginPath();ctx.arc(-18,20,7,0,6.28);ctx.arc(18,20,7,0,6.28);ctx.fill();
+  if(c.carry)rr(-18,-34,36,10,5,'#9b6237');ctx.restore();
+}
+
+function drawDepot(){
+  drawPad(POS.depot.x,POS.depot.y,'🚚 트럭 차고',S.trucks>0);
+  if(S.trucks<=0)return;
+  const p=w2s(POS.depot.x,POS.depot.y-22),z=CAM.z;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);shadow(0,50,98+S.trucks*5,25,.13);
+  const ww=170+Math.min(90,S.trucks*18);rr(-ww/2,-52,ww,100,12,'#b9875f');rr(-ww/2+10,-43,ww-20,80,8,'#e0ba8d');
+  for(let i=0;i<Math.min(5,S.trucks);i++)rr(-ww/2+18+i*38,-16,31,52,4,'#777f76');
+  ctx.fillStyle='#4e624e';ctx.font='900 12px system-ui';ctx.textAlign='center';ctx.fillText('납품 차고 · '+S.trucks+'대',0,-60);ctx.restore();
+}
+
+function drawTruck(t,i){
+  const p=w2s(t.x,t.y),z=CAM.z;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);shadow(0,20,46,12,.18);
+  const colors=['#d96b50','#6484b7','#d3a94b','#6f9b62','#9a6f9f'];rr(-46,-18,64,36,8,colors[i%colors.length]);rr(14,-12,34,30,7,'#f0d4a6');rr(-36,-12,38,20,4,'rgba(90,55,45,.26)');
+  ctx.fillStyle='#2f3431';ctx.beginPath();ctx.arc(-27,21,8,0,6.28);ctx.arc(30,21,8,0,6.28);ctx.fill();
+  if(t.load){ctx.fillStyle='#fff';ctx.font='900 11px system-ui';ctx.textAlign='center';ctx.fillText('📦'+t.load,-12,-25)}ctx.restore();
+}
+
+function drawHuman(o,isWorker=false){
+  const p=w2s(o.x,o.y),z=CAM.z,bob=Math.sin(o.walk||0)*1.7;ctx.save();ctx.translate(p.x,p.y);ctx.scale(z,z);shadow(0,18,22,8,.18);ctx.translate(0,bob);
+  rr(-10,-1,20,29,7,isWorker?'#c88939':'#6b4931');rr(-14,-25,28,30,10,isWorker?'#527049':'#405f39');
+  ctx.fillStyle='#efc29d';ctx.beginPath();ctx.arc(0,-31,12,0,6.28);ctx.fill();ctx.fillStyle=isWorker?'#d8a33e':'#593a28';ctx.beginPath();ctx.arc(0,-37,12,3.1,6.28);ctx.fill();
+  const leg=Math.sin(o.walk||0)*4;ctx.strokeStyle='#493426';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-6,22);ctx.lineTo(-8+leg,33);ctx.moveTo(6,22);ctx.lineTo(8-leg,33);ctx.stroke();
+  const maxShow=Math.min(6,o.carry||0);
+  for(let i=0;i<maxShow;i++){ctx.save();ctx.translate(0,3-i*6);ctx.rotate(i%2?.06:-.06);rr(-17,-5,34,9,5,'#996136');ctx.restore()}
+  if((o.carry||0)>6){ctx.fillStyle='#fff';ctx.font='900 10px system-ui';ctx.textAlign='center';ctx.fillText('+'+((o.carry||0)-6),0,-58)}
+  ctx.restore();
+}
+
+function drawBoard(b){
+  const g=millGeom(b.mill),dest=S.warehouse>0?POS.warehouse:{x:g.x+180,y:g.y+65};
+  const a=w2s(g.start.x,g.start.y),d=w2s(dest.x,dest.y),xx=lerp(a.x,d.x,b.t),yy=lerp(a.y,d.y,b.t);
+  rr(xx-14*CAM.z,yy-5*CAM.z,28*CAM.z,10*CAM.z,2*CAM.z,'#d4a666');
+}
+
+function drawPlacementPreview(){
+  if(!placement.id)return;
+  const label=buildName(placement.id),p=w2s(P.x,P.y-95);
+  ctx.save();ctx.globalAlpha=.6;ctx.fillStyle='#173525';ctx.font='900 12px system-ui';ctx.textAlign='center';ctx.fillText('📍 '+label+' 배치 모드',p.x,p.y);ctx.restore();
+}
+
+function drawFX(){
+  for(const f of fx){
+    const p=w2s(f.x,f.y);ctx.globalAlpha=clamp(f.l*1.8,0,1);ctx.fillStyle=f.c;ctx.beginPath();ctx.arc(p.x,p.y,f.s*CAM.z,0,6.28);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
+function draw(time){
+  ground(time);
+  drawCamp(time);drawNursery();drawWarehouse();drawDepot();
+  for(let i=0;i<S.sawmills;i++)drawMill(i,time);
+  trees.forEach(t=>drawTree(t,time));logs.forEach(drawLog);boards.forEach(drawBoard);
+  loaderCarts.forEach(drawLoader);trucks.forEach(drawTruck);
+  workers.forEach(w=>drawHuman(w,true));drawHuman(P,false);drawPlacementPreview();drawFX();
+}
+
+function loop(now){
+  const dt=Math.min(.033,(now-last)/1000||0);last=now;update(dt);draw(now);requestAnimationFrame(loop);
+}
+
+refreshShop();refreshBuildList();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
