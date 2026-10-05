@@ -498,11 +498,12 @@ shopGrid.addEventListener('click',e=>{
     S.trucks=Math.min(5,S.trucks+1);syncFleets();toast('🚚 납품 트럭 '+S.trucks+'대 운행!');
   }else{
     S[k]++;
-    if(k==='cartLoad')toast('🧺 벌목꾼 1인 운반량 '+workerCap()+'개!');
+    if(k==='cartLoad')toast('📦 카트 적재량 '+cartCap()+'개!');
+    if(k==='cartSpeed')toast('💨 카트 운반속도 +'+Math.round(S.cartSpeed*20)+'%!');
     if(k==='warehouse')toast('🏚️ 창고 용량 '+stockCap()+'!');
     if(k==='conveyor')toast('➰ 컨베이어 속도가 빨라졌습니다!');
     if(k==='truckPower')toast('📦 트럭 적재량 '+truckCap()+'!');
-    if(k==='road')toast('🛣️ 차량 이동 속도가 빨라졌습니다!');
+    if(k==='road')toast('🛣️ 납품 트럭 속도가 빨라졌습니다!');
     if(k==='nursery')toast('🌱 숲 회복 속도가 빨라졌습니다!');
     if(k==='foreman')toast('📋 벌목꾼 전체 효율이 상승했습니다!');
   }
